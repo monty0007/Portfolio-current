@@ -1,0 +1,8 @@
+{
+  "name": "CartoonVerse Portfolio",
+  "description": "An ultra-unique, Awwwards-style portfolio featuring a playful cartoon theme with floating icons of Shinchan, Doraemon, and more.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
