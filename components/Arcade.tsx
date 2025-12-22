@@ -5,63 +5,73 @@ const Arcade: React.FC = () => {
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
   const [score, setScore] = useState(0);
   const [playerX, setPlayerX] = useState(50);
-  const [items, setItems] = useState<{ id: number, x: number, y: number, type: 'CHOCO' | 'PEPPER' }[]>([]);
+  const [obstacles, setObstacles] = useState<{ id: number, x: number, y: number, type: 'BUG' | 'COIN' }[]>([]);
   const [isPressingLeft, setIsPressingLeft] = useState(false);
   const [isPressingRight, setIsPressingRight] = useState(false);
+  const [speed, setSpeed] = useState(1);
   
   const requestRef = useRef<number>(null);
-  const lastTimeRef = useRef<number>(0);
+  const frameCountRef = useRef<number>(0);
 
-  const moveLeft = useCallback(() => setPlayerX(prev => Math.max(5, prev - 3)), []);
-  const moveRight = useCallback(() => setPlayerX(prev => Math.min(95, prev + 3)), []);
+  const moveLeft = useCallback(() => setPlayerX(prev => Math.max(15, prev - 2.8)), []);
+  const moveRight = useCallback(() => setPlayerX(prev => Math.min(85, prev + 2.8)), []);
 
-  // Game Loop for smooth movement
+  // Main Game Loop
   useEffect(() => {
     if (gameState !== 'PLAYING') return;
 
-    const update = (time: number) => {
-      if (lastTimeRef.current !== undefined) {
-        if (isPressingLeft) moveLeft();
-        if (isPressingRight) moveRight();
+    const update = () => {
+      frameCountRef.current++;
+      
+      // Steering logic
+      if (isPressingLeft) moveLeft();
+      if (isPressingRight) moveRight();
 
-        setItems(prev => {
-          const moved = prev.map(item => ({ ...item, y: item.y + 1.2 }));
-          const filtered = moved.filter(item => item.y < 100);
+      setObstacles(prev => {
+        // Obstacles fall faster as speed increases
+        const fallSpeed = 2.5 + speed;
+        const moved = prev.map(obs => ({ ...obs, y: obs.y + fallSpeed }));
+        const filtered = moved.filter(obs => obs.y < 120);
 
-          // Spawn items
-          if (Math.random() < 0.03) {
-            filtered.push({
-              id: Math.random(),
-              x: 10 + Math.random() * 80,
-              y: -10,
-              type: Math.random() > 0.3 ? 'CHOCO' : 'PEPPER'
-            });
-          }
-
-          // Collisions
-          filtered.forEach((item, index) => {
-            if (item.y > 85 && item.y < 95 && Math.abs(item.x - playerX) < 12) {
-              if (item.type === 'CHOCO') {
-                setScore(s => s + 50);
-                filtered.splice(index, 1);
-              } else {
-                setGameState('GAMEOVER');
-              }
-            }
+        // Dynamic spawning
+        if (Math.random() < (0.04 + speed * 0.005) && frameCountRef.current % 8 === 0) {
+          filtered.push({
+            id: Math.random(),
+            x: 20 + Math.random() * 60,
+            y: -20,
+            type: Math.random() > 0.25 ? 'BUG' : 'COIN'
           });
+        }
 
-          return filtered;
+        // Collision detection (fine-tuned hitboxes)
+        filtered.forEach((obs, index) => {
+          if (obs.y > 72 && obs.y < 92 && Math.abs(obs.x - playerX) < 10) {
+            if (obs.type === 'COIN') {
+              setScore(s => s + 50);
+              filtered.splice(index, 1);
+            } else {
+              setGameState('GAMEOVER');
+            }
+          }
         });
+
+        return filtered;
+      });
+
+      // Progression
+      if (frameCountRef.current % 60 === 0) {
+        setScore(s => s + 1);
+        setSpeed(s => Math.min(8, s + 0.01));
       }
-      lastTimeRef.current = time;
+
       requestRef.current = requestAnimationFrame(update);
     };
 
     requestRef.current = requestAnimationFrame(update);
     return () => cancelAnimationFrame(requestRef.current!);
-  }, [gameState, isPressingLeft, isPressingRight, playerX, moveLeft, moveRight]);
+  }, [gameState, isPressingLeft, isPressingRight, playerX, speed, moveLeft, moveRight]);
 
-  // Keyboard controls
+  // Global Key Listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') setIsPressingLeft(true);
@@ -83,50 +93,50 @@ const Arcade: React.FC = () => {
 
   const startGame = () => {
     setScore(0);
-    setItems([]);
+    setObstacles([]);
     setPlayerX(50);
+    setSpeed(1);
     setGameState('PLAYING');
+    frameCountRef.current = 0;
   };
 
   return (
-    <section className="py-24 px-4 bg-[#FFD600] border-y-8 border-black flex flex-col items-center overflow-hidden relative">
-      <div className="absolute top-0 left-0 w-full h-full halftone-bg opacity-20 pointer-events-none"></div>
+    <section className="py-20 px-4 bg-[#FF4B4B] border-y-8 border-black flex flex-col items-center overflow-hidden relative">
+      <div className="absolute inset-0 halftone-bg opacity-10 pointer-events-none"></div>
       
       <div className="max-w-4xl w-full relative z-10">
-        <div className="text-center mb-12">
-          <div className="inline-block bg-black text-white px-6 py-2 font-black text-xl mb-4 transform -rotate-1">
-            ARCADE MODE
-          </div>
-          <h2 className="text-5xl md:text-8xl font-black text-black uppercase tracking-tighter leading-none">
-            SHINCHAN <br /> <span className="text-white" style={{ WebkitTextStroke: '2px black' }}>CHOCO-DASH</span>
+        <div className="text-center mb-10">
+          <h2 className="text-4xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none" style={{ WebkitTextStroke: '2px black', textShadow: '6px 6px 0px #000' }}>
+            TURBO <span className="text-[#FFD600]">GEN-AI</span> RACER
           </h2>
+          <p className="text-white/80 font-black mt-4 uppercase tracking-[0.2em] text-xs">Awwwards Game Edition v2.0</p>
         </div>
 
-        {/* Arcade Cabinet Container */}
-        <div className="mx-auto w-full max-w-[450px] transform scale-[0.85] sm:scale-100 transition-transform">
+        {/* Arcade Cabinet */}
+        <div className="mx-auto w-full max-w-[440px] transform scale-[0.85] sm:scale-100 transition-all origin-top">
           <div className="bg-[#1A1A1A] border-[8px] border-black shadow-[15px_15px_0px_#000] rounded-t-[50px] overflow-hidden">
             
-            {/* Cabinet Header */}
             <div className="bg-[#333] h-16 border-b-8 border-black flex items-center justify-between px-8">
+              <div className="text-[#FFD600] font-black italic text-lg tracking-tighter">MANISHI.EXE</div>
               <div className="flex gap-2">
-                <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse"></div>
-                <div className="w-4 h-4 rounded-full bg-yellow-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
               </div>
-              <span className="text-[#FFD600] font-black italic tracking-widest text-sm">HI-SCORE: 99999</span>
             </div>
 
-            {/* Screen Area */}
-            <div className="p-6 bg-[#222]">
-              <div className="crt-screen aspect-[4/3] relative bg-[#0a0a0a] rounded-xl border-4 border-[#333] overflow-hidden">
+            <div className="p-3 bg-[#222]">
+              <div className="crt-screen aspect-[4/5] relative bg-[#0f172a] rounded-xl border-4 border-[#333] overflow-hidden">
                 
                 {gameState === 'START' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Shinchan&backgroundColor=FFD600" className="w-32 h-32 mb-6 floating" alt="Shinchan" />
-                    <h3 className="text-[#FFD600] text-3xl font-black mb-4 animate-pulse">INSERT COIN</h3>
-                    <p className="text-white text-xs font-bold opacity-70 uppercase mb-6">Collect Choco-Chips! <br/> Avoid Green Peppers!</p>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-30">
+                    <div className="text-5xl mb-4 floating">🏎️</div>
+                    <h3 className="text-[#FFD600] text-3xl font-black mb-2 italic">DRIVE FOR COMPUTE</h3>
+                    <p className="text-white/60 font-bold uppercase text-[10px] mb-8 leading-tight tracking-widest">
+                      Dodge the Bugs (👾) <br/> Collect Cells (🔋)
+                    </p>
                     <button 
                       onClick={startGame}
-                      className="cartoon-btn bg-[#FF4B4B] text-white px-8 py-3 font-black text-lg uppercase shadow-[4px_4px_0px_#000]"
+                      className="cartoon-btn bg-[#FFD600] text-black px-8 py-3 font-black text-lg uppercase shadow-[4px_4px_0px_#000]"
                     >
                       Play Now
                     </button>
@@ -134,37 +144,60 @@ const Arcade: React.FC = () => {
                 )}
 
                 {gameState === 'PLAYING' && (
-                  <div className="w-full h-full relative overflow-hidden bg-gradient-to-b from-[#001] to-[#112]">
-                    <div className="absolute top-4 right-4 text-[#FFD600] font-black text-2xl z-20">
-                      {score}
-                    </div>
-                    
-                    {/* Player */}
-                    <div 
-                      className="absolute bottom-6 w-16 h-16 transition-all duration-100 ease-out z-20"
-                      style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}
-                    >
-                      <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Shinchan&backgroundColor=FFD600" className="w-full h-full" alt="Shinchan" />
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-2 bg-black/40 rounded-full blur-sm"></div>
+                  <div className="w-full h-full relative bg-[#1e293b]">
+                    <div className="absolute top-4 left-0 w-full flex justify-between px-4 z-40">
+                      <div className="bg-black/40 backdrop-blur px-2 py-1 border-2 border-[#FFD600] text-[#FFD600] font-black text-xs uppercase">
+                        Score: {score}
+                      </div>
+                      <div className="bg-black/40 backdrop-blur px-2 py-1 border-2 border-blue-400 text-blue-400 font-black text-xs uppercase">
+                        Speed: {speed.toFixed(1)}x
+                      </div>
                     </div>
 
-                    {/* Falling Items */}
-                    {items.map(item => (
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute left-1/2 -translate-x-1/2 w-2 h-full flex flex-col gap-12 opacity-20" 
+                           style={{ animation: `slideDown ${0.8 / speed}s linear infinite` }}>
+                        {[...Array(12)].map((_, i) => (
+                          <div key={i} className="w-full h-16 bg-white"></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div 
+                      className="absolute bottom-8 w-14 h-20 transition-all duration-75 ease-out z-20 flex flex-col items-center"
+                      style={{ left: `${playerX}%`, transform: 'translateX(-50%)' }}
+                    >
+                      <div className="w-full h-full bg-blue-500 border-[3px] border-black rounded-lg shadow-[3px_3px_0px_rgba(0,0,0,0.5)] relative">
+                        <div className="absolute top-1 left-1 w-3 h-4 bg-blue-300 border-2 border-black rounded-sm"></div>
+                        <div className="absolute top-1 right-1 w-3 h-4 bg-blue-300 border-2 border-black rounded-sm"></div>
+                        <div className="absolute -left-1.5 top-2 w-2 h-4 bg-black rounded-sm"></div>
+                        <div className="absolute -right-1.5 top-2 w-2 h-4 bg-black rounded-sm"></div>
+                        <div className="absolute -left-1.5 bottom-2 w-2 h-4 bg-black rounded-sm"></div>
+                        <div className="absolute -right-1.5 bottom-2 w-2 h-4 bg-black rounded-sm"></div>
+                      </div>
+                      {speed > 3 && <div className="w-2 h-6 bg-red-500 animate-pulse mt-1 rounded-full blur-[2px]"></div>}
+                    </div>
+
+                    {obstacles.map(obs => (
                       <div 
-                        key={item.id}
-                        className="absolute w-10 h-10 flex items-center justify-center text-2xl"
-                        style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                        key={obs.id}
+                        className="absolute w-12 h-12 flex items-center justify-center text-3xl z-10"
+                        style={{ left: `${obs.x}%`, top: `${obs.y}%` }}
                       >
-                        {item.type === 'CHOCO' ? '🍪' : '🫑'}
+                        {obs.type === 'BUG' ? (
+                          <div className="p-1 bg-red-500 border-2 border-black rounded">👾</div>
+                        ) : (
+                          <div className="animate-bounce">🔋</div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
 
                 {gameState === 'GAMEOVER' && (
-                  <div className="absolute inset-0 bg-red-900/40 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-                    <h3 className="text-white text-5xl font-black mb-2 tracking-tighter">GAME OVER</h3>
-                    <p className="text-[#FFD600] text-2xl font-black mb-8">SCORE: {score}</p>
+                  <div className="absolute inset-0 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-50">
+                    <h3 className="text-red-500 text-4xl font-black mb-1 italic tracking-tighter">ENGINE BLOWN!</h3>
+                    <p className="text-white text-lg font-bold mb-8 uppercase tracking-widest">Score: {score}</p>
                     <button 
                       onClick={startGame}
                       className="cartoon-btn bg-white text-black px-8 py-3 font-black text-lg uppercase"
@@ -176,55 +209,44 @@ const Arcade: React.FC = () => {
               </div>
             </div>
 
-            {/* Controls Panel */}
-            <div className="bg-[#444] p-10 border-t-8 border-black flex items-center justify-between relative">
-              {/* Joystick */}
-              <div className="relative w-24 h-24 bg-[#222] rounded-full border-4 border-black flex items-center justify-center">
-                <div 
-                  className={`w-12 h-12 bg-red-600 rounded-full border-4 border-black shadow-[inset_-4px_-4px_8px_rgba(0,0,0,0.5)] transition-transform ${isPressingLeft ? '-translate-x-4 rotate-[-20deg]' : isPressingRight ? 'translate-x-4 rotate-[20deg]' : ''}`}
-                ></div>
+            <div className="bg-[#444] p-8 border-t-8 border-black flex items-center justify-between relative shadow-[inset_0px_5px_15px_rgba(0,0,0,0.5)]">
+              <div className="w-20 h-20 bg-[#222] rounded-full border-4 border-black flex items-center justify-center overflow-hidden">
+                 <div className={`w-12 h-12 border-4 border-white rounded-full transition-transform duration-150 ${isPressingLeft ? '-rotate-45' : isPressingRight ? 'rotate-45' : ''}`}>
+                    <div className="w-0.5 h-6 bg-red-500 mx-auto"></div>
+                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-6">
+              <div className="flex gap-4">
                 <button 
                   onMouseDown={() => setIsPressingLeft(true)}
                   onMouseUp={() => setIsPressingLeft(false)}
-                  onMouseLeave={() => setIsPressingLeft(false)}
                   onTouchStart={(e) => { e.preventDefault(); setIsPressingLeft(true); }}
                   onTouchEnd={() => setIsPressingLeft(false)}
-                  className={`w-16 h-16 bg-[#FF4B4B] rounded-full border-4 border-black shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white font-black text-2xl`}
+                  className="w-16 h-16 bg-red-600 rounded-full border-4 border-black shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white font-black text-2xl"
                 >
                   L
                 </button>
                 <button 
                   onMouseDown={() => setIsPressingRight(true)}
                   onMouseUp={() => setIsPressingRight(false)}
-                  onMouseLeave={() => setIsPressingRight(false)}
                   onTouchStart={(e) => { e.preventDefault(); setIsPressingRight(true); }}
                   onTouchEnd={() => setIsPressingRight(false)}
-                  className={`w-16 h-16 bg-[#00A1FF] rounded-full border-4 border-black shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white font-black text-2xl`}
+                  className="w-16 h-16 bg-[#00A1FF] rounded-full border-4 border-black shadow-[4px_4px_0px_#000] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white font-black text-2xl"
                 >
                   R
                 </button>
               </div>
             </div>
           </div>
-          
-          {/* Base */}
-          <div className="h-10 bg-[#111] mx-4 border-x-8 border-black"></div>
-        </div>
-
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-4 bg-white border-4 border-black px-6 py-2 shadow-[6px_6px_0px_#000]">
-            <span className="font-black">CONTROLS:</span>
-            <kbd className="bg-gray-200 px-2 py-1 border-2 border-black font-bold">←</kbd>
-            <kbd className="bg-gray-200 px-2 py-1 border-2 border-black font-bold">→</kbd>
-            <span className="text-gray-400">|</span>
-            <span className="font-bold">TAP BUTTONS ON SCREEN</span>
-          </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translateY(-100px); }
+          to { transform: translateY(100px); }
+        }
+      `}</style>
     </section>
   );
 };
