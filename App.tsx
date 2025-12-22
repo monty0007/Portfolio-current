@@ -9,13 +9,34 @@ import GeminiBot from './components/GeminiBot';
 import Arcade from './components/Arcade';
 import Footer from './components/Footer';
 import Blog from './components/Blog';
+import Admin from './components/Admin';
+import Achievements from './components/Achievements';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'blog'>('home');
+  const [view, setView] = useState<'home' | 'blog' | 'admin'>('home');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
 
-  const handleNavigate = (newView: 'home' | 'blog') => {
+  const handleNavigate = (newView: 'home' | 'blog' | 'admin') => {
+    if (newView === 'admin') {
+      setShowLoginModal(true);
+      return;
+    }
     setView(newView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLoginSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (passwordInput === 'actionbastion') {
+      setView('admin');
+      setShowLoginModal(false);
+      setPasswordInput('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      alert("WRONG CODE! Ninja Hattori is watching you! 🥷");
+      setPasswordInput('');
+    }
   };
 
   return (
@@ -24,13 +45,12 @@ const App: React.FC = () => {
       <Navbar onNavigate={handleNavigate} currentView={view} />
       
       <main>
-        {view === 'home' ? (
+        {view === 'home' && (
           <>
             <Hero />
-            
             <section id="about" className="py-32 px-6 bg-white border-y-8 border-black relative z-10 overflow-hidden">
               <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
-                <div className="w-full md:w-1/3 aspect-square cartoon-border overflow-hidden rotate-[-3deg] hover:rotate-0 transition-transform bg-[#FF4B4B]">
+                <div className="w-full md:w-1/3 aspect-square cartoon-border overflow-hidden rotate-[-3deg] hover:rotate-0 transition-transform bg-[#FF4B4B] border-4 border-black shadow-[8px_8px_0px_#000]">
                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=ManishiYadav&backgroundColor=FF4B4B" alt="Manishi Yadav" className="w-full h-full scale-110" />
                 </div>
                 <div className="flex-1">
@@ -43,29 +63,18 @@ const App: React.FC = () => {
                   <p className="text-xl md:text-2xl font-medium text-gray-700 leading-relaxed mb-12">
                     Manishi Yadav here! Based in the digital clouds. I turn complex neural architectures into playful, robust tools that feel as intuitive as Doraemon's magic pocket gadgets.
                   </p>
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-full border-4 border-black bg-red-400"></div>
-                    <div className="w-12 h-12 rounded-full border-4 border-black bg-blue-400"></div>
-                    <div className="w-12 h-12 rounded-full border-4 border-black bg-yellow-400"></div>
-                  </div>
                 </div>
               </div>
             </section>
-
             <Projects />
-            
+            <Achievements />
             <Arcade />
-            
             <Skills />
-
             <section id="contact-banner" className="py-40 px-6 text-center bg-[#FF4B4B] relative z-10 border-t-8 border-black text-white">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-7xl md:text-9xl font-black uppercase mb-12 leading-none">
                   Deploy <br /> <span className="text-[#FFD600]" style={{ WebkitTextStroke: '2px black' }}>With Me</span>
                 </h2>
-                <p className="text-3xl font-bold mb-16 max-w-2xl mx-auto leading-tight">
-                  Ready to optimize your workflow with custom AI agents? Drop a message in my magic pocket!
-                </p>
                 <a 
                   href="mailto:monty.my1234@gmail.com" 
                   className="cartoon-btn inline-block bg-white text-black text-4xl font-black px-16 py-10 uppercase hover:bg-black hover:text-white"
@@ -75,12 +84,55 @@ const App: React.FC = () => {
               </div>
             </section>
           </>
-        ) : (
-          <Blog onBack={() => handleNavigate('home')} />
         )}
+        {view === 'blog' && <Blog onBack={() => setView('home')} />}
+        {view === 'admin' && <Admin onBack={() => setView('home')} />}
       </main>
 
-      <Footer />
+      <Footer onNavigate={handleNavigate} />
+      
+      {/* Secret Access Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white border-[8px] border-black shadow-[20px_20px_0px_#FFD600] p-10 max-w-md w-full relative">
+            <button 
+              onClick={() => setShowLoginModal(false)}
+              className="absolute -top-6 -right-6 w-12 h-12 bg-red-500 text-white border-4 border-black font-black text-2xl flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              ×
+            </button>
+            <h2 className="text-4xl font-black uppercase mb-6 tracking-tighter italic">Top Secret <br/> <span className="text-blue-600 underline">Access Required</span></h2>
+            <p className="font-bold text-gray-600 mb-8">Enter the secret command to enter the Lab.</p>
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
+              <input 
+                autoFocus
+                type="password"
+                placeholder="SECRET_KEY"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full p-4 border-4 border-black font-black text-2xl uppercase tracking-widest focus:bg-yellow-50 outline-none"
+              />
+              <button 
+                type="submit"
+                className="cartoon-btn w-full bg-black text-white py-4 font-black text-xl uppercase tracking-widest hover:bg-[#FF4B4B]"
+              >
+                Authenticate →
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Improved Secret Door Trigger - High Z-index and explicit positioning */}
+      <div className="fixed bottom-0 left-0 z-[250] p-4 group">
+        <button 
+          onClick={() => handleNavigate('admin')}
+          className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black text-white text-[10px] px-3 py-2 font-black uppercase border-2 border-white shadow-[4px_4px_0px_#FFD600] cursor-pointer"
+        >
+          Open Secret Lab
+        </button>
+      </div>
+      
       <GeminiBot />
     </div>
   );

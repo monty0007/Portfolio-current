@@ -1,7 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate?: (view: 'home' | 'blog' | 'admin') => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
 
   useEffect(() => {
@@ -13,7 +17,7 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-black text-white pt-20 pb-10 px-6 relative overflow-hidden border-t-8 border-black">
-      {/* Background oversized name - reduced size for elegance */}
+      {/* Background oversized name */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12vw] font-black text-white/5 uppercase select-none pointer-events-none whitespace-nowrap">
         MANISHI YADAV
       </div>
@@ -41,21 +45,35 @@ const Footer: React.FC = () => {
               <ul className="space-y-3 text-lg font-bold">
                 <li><a href="#about" className="hover:text-[#FFD600] transition-all">Mission</a></li>
                 <li><a href="#projects" className="hover:text-[#FFD600] transition-all">Works</a></li>
-                <li><a href="#skills" className="hover:text-[#FFD600] transition-all">Skills</a></li>
+                <li>
+                  <button 
+                    onClick={() => onNavigate?.('blog')}
+                    className="hover:text-[#FFD600] transition-all uppercase text-left w-full"
+                  >
+                    Blog
+                  </button>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-xs font-black uppercase mb-6 text-gray-500 tracking-[0.2em]">Socials</h4>
               <ul className="space-y-3 text-lg font-bold">
-                <li><a href="#" className="hover:underline hover:decoration-[#FF4B4B]">GitHub</a></li>
-                <li><a href="#" className="hover:underline hover:decoration-[#00A1FF]">LinkedIn</a></li>
-                <li><a href="#" className="hover:underline hover:decoration-[#FFD600]">Twitter</a></li>
+                <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#FF4B4B]">GitHub</a></li>
+                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#00A1FF]">LinkedIn</a></li>
+                <li>
+                  <button 
+                    onClick={() => onNavigate?.('admin')}
+                    className="text-white/40 hover:text-[#FFD600] transition-all text-sm uppercase font-black border-b-2 border-white/20 hover:border-[#FFD600]"
+                  >
+                    Admin Access
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Marquee effect for energy */}
+        {/* Marquee effect */}
         <div className="w-full h-px bg-white/20 mb-8"></div>
         <div className="overflow-hidden whitespace-nowrap mb-8 select-none">
           <div className="inline-block animate-[marquee_20s_linear_infinite] text-sm font-black uppercase tracking-[0.3em] text-gray-400">
@@ -80,7 +98,7 @@ const Footer: React.FC = () => {
 
           <button 
             onClick={scrollToTop}
-            className="cartoon-btn w-14 h-14 bg-[#00A1FF] text-white flex items-center justify-center hover:bg-white hover:text-black transition-all group"
+            className="cartoon-btn w-14 h-14 bg-[#00A1FF] text-white flex items-center justify-center hover:bg-white hover:text-black transition-all group border-4 border-black"
           >
             <span className="text-2xl group-hover:-translate-y-1 transition-transform">↑</span>
           </button>

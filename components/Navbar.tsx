@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 
+// Updated NavbarProps to include 'admin' in currentView and onNavigate to match the parent state in App.tsx
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'blog') => void;
-  currentView: 'home' | 'blog';
+  onNavigate: (view: 'home' | 'blog' | 'admin') => void;
+  currentView: 'home' | 'blog' | 'admin';
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {

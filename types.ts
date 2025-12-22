@@ -13,11 +13,13 @@ export interface Skill {
   level: number;
 }
 
-export interface Experience {
-  role: string;
-  company: string;
-  period: string;
-  description: string;
+export interface Achievement {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  icon: string;
+  color: string;
 }
 
 export interface BlogPost {
@@ -25,6 +27,7 @@ export interface BlogPost {
   title: string;
   date: string;
   excerpt: string;
+  content: string;
   category: string;
   color: string;
 }
