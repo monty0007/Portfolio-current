@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import Blog from './components/Blog';
 import Admin from './components/Admin';
 import Achievements from './components/Achievements';
+import ContactForm from './components/ContactForm';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'home' | 'blog' | 'admin'>('home');
@@ -101,17 +102,19 @@ const App: React.FC = () => {
             <Achievements />
             <Arcade />
             <Skills />
-            <section id="contact-banner" className="py-40 px-6 text-center bg-[#FF4B4B] relative z-10 border-t-8 border-black text-white">
-              <div className="max-w-4xl mx-auto">
-                <h2 className="text-7xl md:text-9xl font-black uppercase mb-12 leading-none">
+            <section id="contact-banner" className="py-24 px-6 text-center bg-[#FF4B4B] relative z-10 border-t-8 border-black text-white">
+              <div className="max-w-6xl mx-auto">
+                <h2 className="text-4xl md:text-6xl font-black uppercase mb-12 leading-none tracking-tighter">
                   Deploy <br /> <span className="text-[#FFD600]" style={{ WebkitTextStroke: '2px black' }}>With Me</span>
                 </h2>
-                <a 
-                  href="mailto:monty.my1234@gmail.com" 
-                  className="cartoon-btn inline-block bg-white text-black text-4xl font-black px-16 py-10 uppercase hover:bg-black hover:text-white"
-                >
-                  Email Manishi
-                </a>
+                
+                <ContactForm />
+
+                <div className="mt-20 flex flex-wrap justify-center gap-8 text-black font-black uppercase">
+                  <div className="bg-white border-4 border-black px-6 py-2 rotate-1">Available 24/7</div>
+                  <div className="bg-[#FFD600] border-4 border-black px-6 py-2 -rotate-1">Action Bastion Energy</div>
+                  <div className="bg-[#00A1FF] text-white border-4 border-black px-6 py-2 rotate-2">22nd Century Tech</div>
+                </div>
               </div>
             </section>
           </>
