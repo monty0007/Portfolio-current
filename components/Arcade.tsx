@@ -1,312 +1,337 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-
-type GameType = 'RACER' | 'SNAKE' | 'PACMAN' | 'COLLECTOR';
+import React, { useState, useEffect, useRef } from 'react';
 
 const Arcade: React.FC = () => {
-  const [activeGame, setActiveGame] = useState<GameType>('RACER');
-  const [isBooting, setIsBooting] = useState(false);
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
+
+  // Game Constants (Percentage-based units)
+  const GRAVITY = 0.4;
+  const JUMP_FORCE = -11;
+  const PLAYER_SPEED = 0.6;
   
-  const [moveDir, setMoveDir] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
-  const [entities, setEntities] = useState<any[]>([]);
-  const [playerPos, setPlayerPos] = useState({ x: 50, y: 50 });
-  const [speed, setSpeed] = useState(1);
+  // Game State Refs for high-performance updates
+  const gameRunning = useRef(false);
+  const keys = useRef<{ [key: string]: boolean }>({});
+  const playerRef = useRef({ x: 10, y: 50, vy: 0, isJumping: false, facing: 'right' as 'left' | 'right' });
+  const cameraRef = useRef(0);
+  const coinsRef = useRef<{ x: number, y: number, collected: boolean }[]>([]);
+  
+  // Static World Data
+  const platforms = useRef([
+    { x: 0, y: 80, w: 40 },
+    { x: 50, y: 70, w: 25 },
+    { x: 85, y: 55, w: 20 },
+    { x: 115, y: 75, w: 30 },
+    { x: 155, y: 60, w: 25 },
+    { x: 195, y: 45, w: 20 },
+    { x: 230, y: 75, w: 45 },
+    { x: 290, y: 60, w: 25 },
+    { x: 330, y: 50, w: 20 },
+    { x: 360, y: 70, w: 40 },
+    { x: 420, y: 80, w: 100 },
+  ]);
 
-  const requestRef = useRef<number>(null);
-  const frameCountRef = useRef<number>(0);
-
-  const switchGame = (type: GameType) => {
-    if (activeGame === type || isBooting) return;
-    setIsBooting(true);
-    setGameState('START');
-    setTimeout(() => {
-      setActiveGame(type);
-      setIsBooting(false);
-    }, 800);
-  };
+  // React State for rendering (updated via game loop)
+  const [renderState, setRenderState] = useState({
+    player: { x: 10, y: 50, facing: 'right', isJumping: false },
+    cameraX: 0,
+    coins: [] as { x: number, y: number, collected: boolean }[]
+  });
 
   const startGame = () => {
+    playerRef.current = { x: 10, y: 50, vy: 0, isJumping: false, facing: 'right' };
+    cameraRef.current = 0;
+    coinsRef.current = [
+      { x: 55, y: 60, collected: false },
+      { x: 95, y: 45, collected: false },
+      { x: 125, y: 65, collected: false },
+      { x: 165, y: 50, collected: false },
+      { x: 205, y: 35, collected: false },
+      { x: 340, y: 40, collected: false },
+    ];
     setScore(0);
+    gameRunning.current = true;
     setGameState('PLAYING');
-    setSpeed(1);
-    frameCountRef.current = 0;
-
-    if (activeGame === 'RACER') {
-      setPlayerPos({ x: 50, y: 80 });
-      setEntities([]);
-      setMoveDir({ x: 0, y: 0 });
-    } else if (activeGame === 'SNAKE') {
-      setPlayerPos({ x: 50, y: 50 });
-      setMoveDir({ x: 5, y: 0 });
-      setEntities([{ x: 45, y: 50 }, { x: 40, y: 50 }, { x: 80, y: 50, type: 'FOOD' }]);
-    } else if (activeGame === 'PACMAN') {
-      setPlayerPos({ x: 50, y: 80 });
-      setMoveDir({ x: 0, y: 0 });
-      const dots = Array.from({ length: 15 }, () => ({
-        id: Math.random(),
-        x: 15 + Math.random() * 70,
-        y: 15 + Math.random() * 65,
-        type: 'DOT'
-      }));
-      setEntities([...dots, { id: 'ghost', x: 50, y: 20, type: 'GHOST' }]);
-    } else if (activeGame === 'COLLECTOR') {
-      setPlayerPos({ x: 50, y: 85 });
-      setEntities([]);
-      setMoveDir({ x: 0, y: 0 });
-    }
   };
+
+  const handleGameOver = () => {
+    gameRunning.current = false;
+    setGameState('GAMEOVER');
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => (keys.current[e.code] = true);
+    const handleKeyUp = (e: KeyboardEvent) => (keys.current[e.code] = false);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (gameState !== 'PLAYING') return;
 
-    const update = () => {
-      frameCountRef.current++;
+    let frameId: number;
 
-      if (activeGame === 'RACER') {
-        setPlayerPos(prev => ({ ...prev, x: Math.max(15, Math.min(85, prev.x + (moveDir.x * 2.5))) }));
-        setEntities(prev => {
-          const moved = prev.map(e => ({ ...e, y: e.y + (3 + speed) }));
-          const filtered = moved.filter(e => e.y < 110);
-          if (Math.random() < 0.1 && frameCountRef.current % 8 === 0) {
-            filtered.push({ id: Math.random(), x: 20 + Math.random() * 60, y: -10, type: Math.random() > 0.3 ? 'BUG' : 'COIN' });
+    const loop = () => {
+      if (!gameRunning.current) return;
+
+      const p = playerRef.current;
+      let nextX = p.x;
+      let nextY = p.y;
+      let nextVy = p.vy + GRAVITY;
+      let nextFacing = p.facing;
+
+      // Input Handling
+      if (keys.current['ArrowRight'] || keys.current['KeyD'] || keys.current['MobileRight']) {
+        nextX += PLAYER_SPEED;
+        nextFacing = 'right';
+      }
+      if (keys.current['ArrowLeft'] || keys.current['KeyA'] || keys.current['MobileLeft']) {
+        nextX -= PLAYER_SPEED;
+        nextFacing = 'left';
+      }
+      if ((keys.current['Space'] || keys.current['ArrowUp'] || keys.current['KeyW'] || keys.current['MobileJump']) && !p.isJumping) {
+        nextVy = JUMP_FORCE;
+        p.isJumping = true;
+      }
+
+      nextY += nextVy;
+
+      // Simple Collision with platforms
+      let onPlatform = false;
+      for (const plat of platforms.current) {
+        // Check if player is within horizontal bounds of platform
+        if (nextX + 2 > plat.x && nextX - 2 < plat.x + plat.w) {
+          // Check if player was above and is now below or on the platform surface
+          if (p.y <= plat.y && nextY >= plat.y) {
+            nextY = plat.y;
+            nextVy = 0;
+            onPlatform = true;
+            break;
           }
-          filtered.forEach((e, i) => {
-            if (e.y > 75 && e.y < 95 && Math.abs(e.x - playerPos.x) < 8) {
-              if (e.type === 'COIN') { setScore(s => s + 100); filtered.splice(i, 1); }
-              else { setGameState('GAMEOVER'); }
-            }
-          });
-          return filtered;
-        });
-        setSpeed(s => Math.min(8, s + 0.002));
-      } 
-      
-      else if (activeGame === 'SNAKE') {
-        const snakeSpeed = Math.max(3, 10 - Math.floor(score / 4));
-        if (frameCountRef.current % snakeSpeed === 0) {
-          setPlayerPos(prevHead => {
-            const nextHead = { x: prevHead.x + moveDir.x, y: prevHead.y + moveDir.y };
-            if (nextHead.x < 0 || nextHead.x > 95 || nextHead.y < 0 || nextHead.y > 95) { setGameState('GAMEOVER'); return prevHead; }
-            setEntities(ents => {
-              const body = ents.filter(e => !e.type);
-              const food = ents.find(e => e.type === 'FOOD');
-              if (body.some(s => Math.abs(s.x - nextHead.x) < 2 && Math.abs(s.y - nextHead.y) < 2)) { setGameState('GAMEOVER'); return ents; }
-              if (food && Math.abs(food.x - nextHead.x) < 5 && Math.abs(food.y - nextHead.y) < 5) {
-                setScore(s => s + 1);
-                return [prevHead, ...body, { x: 10 + Math.random() * 80, y: 10 + Math.random() * 80, type: 'FOOD' }];
-              }
-              return [prevHead, ...body.slice(0, -1), food];
-            });
-            return nextHead;
-          });
         }
       }
 
-      else if (activeGame === 'PACMAN') {
-        setPlayerPos(p => ({ x: Math.max(5, Math.min(95, p.x + moveDir.x * 2)), y: Math.max(5, Math.min(95, p.y + moveDir.y * 2)) }));
-        setEntities(prev => {
-          const next = prev.map(e => {
-            if (e.type === 'GHOST') {
-              const dx = playerPos.x - e.x;
-              const dy = playerPos.y - e.y;
-              const angle = Math.atan2(dy, dx);
-              const nx = e.x + Math.cos(angle) * 0.85;
-              const ny = e.y + Math.sin(angle) * 0.85;
-              if (Math.abs(nx - playerPos.x) < 5 && Math.abs(ny - playerPos.y) < 5) setGameState('GAMEOVER');
-              return { ...e, x: nx, y: ny };
-            }
-            return e;
-          });
-          const remaining = next.filter(e => {
-            if (e.type === 'DOT') {
-              const hit = Math.abs(e.x - playerPos.x) < 5 && Math.abs(e.y - playerPos.y) < 5;
-              if (hit) setScore(s => s + 10);
-              return !hit;
-            }
-            return true;
-          });
-          if (remaining.filter(e => e.type === 'DOT').length === 0) {
-             setScore(s => s + 500);
-             return [...remaining, ...Array.from({length: 15}, () => ({ id: Math.random(), x: 15 + Math.random() * 70, y: 15 + Math.random() * 65, type: 'DOT' }))];
-          }
-          return remaining;
-        });
+      // Check for death (falling)
+      if (nextY > 110) {
+        handleGameOver();
+        return;
       }
 
-      else if (activeGame === 'COLLECTOR') {
-        setPlayerPos(p => ({ ...p, x: Math.max(10, Math.min(90, p.x + moveDir.x * 3)) }));
-        setEntities(prev => {
-          const moved = prev.map(e => ({ ...e, y: e.y + (2 + speed * 0.6) }));
-          const filtered = moved.filter(e => e.y < 110);
-          if (Math.random() < 0.1 && frameCountRef.current % 12 === 0) {
-            filtered.push({ id: Math.random(), x: 10 + Math.random() * 80, y: -5, type: Math.random() > 0.2 ? 'GADGET' : 'GHOST' });
-          }
-          filtered.forEach((e, i) => {
-            if (e.y > 80 && e.y < 95 && Math.abs(e.x - playerPos.x) < 10) {
-              if (e.type === 'GADGET') { setScore(s => s + 100); filtered.splice(i, 1); }
-              else { setGameState('GAMEOVER'); }
-            }
-          });
-          return filtered;
-        });
-      }
+      // Update Camera
+      if (nextX > cameraRef.current + 60) cameraRef.current = nextX - 60;
+      if (nextX < cameraRef.current + 20) cameraRef.current = Math.max(0, nextX - 20);
 
-      requestRef.current = requestAnimationFrame(update);
+      // Collect Coins
+      coinsRef.current.forEach(c => {
+        if (!c.collected && Math.abs(c.x - nextX) < 4 && Math.abs(c.y - nextY) < 8) {
+          c.collected = true;
+          setScore(s => s + 100);
+        }
+      });
+
+      // Update refs
+      playerRef.current = {
+        x: Math.max(0, nextX),
+        y: nextY,
+        vy: nextVy,
+        isJumping: !onPlatform,
+        facing: nextFacing
+      };
+
+      // Sync React state for render (only what's needed for the visual)
+      setRenderState({
+        player: { x: playerRef.current.x, y: playerRef.current.y, facing: playerRef.current.facing, isJumping: playerRef.current.isJumping },
+        cameraX: cameraRef.current,
+        coins: [...coinsRef.current]
+      });
+
+      frameId = requestAnimationFrame(loop);
     };
 
-    requestRef.current = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(requestRef.current!);
-  }, [gameState, activeGame, moveDir, playerPos, speed, entities, score]);
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [gameState]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameState !== 'PLAYING') return;
-      if (activeGame === 'SNAKE') {
-        if (e.key === 'ArrowLeft' && moveDir.x === 0) setMoveDir({ x: -5, y: 0 });
-        if (e.key === 'ArrowRight' && moveDir.x === 0) setMoveDir({ x: 5, y: 0 });
-        if (e.key === 'ArrowUp' && moveDir.y === 0) setMoveDir({ x: 0, y: -5 });
-        if (e.key === 'ArrowDown' && moveDir.y === 0) setMoveDir({ x: 0, y: 5 });
-      } else {
-        if (e.key === 'ArrowLeft') setMoveDir({ x: -1, y: 0 });
-        if (e.key === 'ArrowRight') setMoveDir({ x: 1, y: 0 });
-        if (e.key === 'ArrowUp') setMoveDir({ x: 0, y: -1 });
-        if (e.key === 'ArrowDown') setMoveDir({ x: 0, y: 1 });
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (activeGame !== 'SNAKE') {
-        if (['ArrowLeft', 'ArrowRight'].includes(e.key)) setMoveDir(p => ({ ...p, x: 0 }));
-        if (['ArrowUp', 'ArrowDown'].includes(e.key)) setMoveDir(p => ({ ...p, y: 0 }));
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-  }, [gameState, activeGame, moveDir]);
+    if (score > highScore) setHighScore(score);
+  }, [score, highScore]);
+
+  // Mobile Button Handlers
+  const handleBtnDown = (key: string) => (keys.current[key] = true);
+  const handleBtnUp = (key: string) => (keys.current[key] = false);
 
   return (
     <section className="py-24 px-4 bg-[#FFD600] border-y-8 border-black flex flex-col items-center overflow-hidden relative">
       <div className="absolute inset-0 halftone-bg opacity-10 pointer-events-none"></div>
       
-      <div className="max-w-6xl w-full flex flex-col lg:flex-row items-center justify-center gap-16 relative z-10">
-        
-        <div className="flex lg:flex-col gap-4 order-2 lg:order-1">
-          {(['RACER', 'SNAKE', 'PACMAN', 'COLLECTOR'] as GameType[]).map(type => (
-            <button key={type} onClick={() => switchGame(type)}
-              className={`cartoon-btn px-6 py-4 font-black text-sm uppercase transition-all duration-300 min-w-[140px] ${activeGame === type ? 'bg-[#FF4B4B] text-white -translate-x-2' : 'bg-white text-black hover:bg-gray-100'}`}
+      <div className="max-w-6xl w-full flex flex-col items-center justify-center relative z-10">
+        <header className="text-center mb-10">
+          <div className="inline-block bg-black text-white px-6 py-2 font-black uppercase text-xl mb-4 rotate-[-1deg] shadow-[4px_4px_0px_#FF4B4B]">
+            MANISHI'S SECRET LAB
+          </div>
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
+            SUPER <span className="text-white" style={{ WebkitTextStroke: '2px black', textShadow: '6px 6px 0px #00A1FF' }}>MANISHI</span>
+          </h2>
+        </header>
+
+        {/* iPad Visual Frame - Enhanced Pro Look */}
+        <div className="w-full max-w-[950px] aspect-[4/3] bg-gradient-to-br from-gray-800 to-black border-[14px] border-black rounded-[4rem] shadow-[30px_30px_0px_rgba(0,0,0,1)] relative overflow-hidden flex flex-col p-4">
+          
+          {/* Top Notch / FaceID Area */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-8 bg-black rounded-b-3xl z-[60] flex items-center justify-center gap-4">
+            <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+            <div className="w-3 h-1 bg-gray-800 rounded-full"></div>
+          </div>
+          
+          <div className="flex-1 rounded-[3rem] bg-sky-400 overflow-hidden relative border-4 border-black/20 crt-screen">
+            {/* World Container */}
+            <div 
+              className="absolute inset-0 will-change-transform"
+              style={{ transform: `translateX(-${renderState.cameraX}%)` }}
             >
-              {type === 'RACER' && '🏎️ Racer'}
-              {type === 'SNAKE' && '🐍 Snake'}
-              {type === 'PACMAN' && '🟡 Pacman'}
-              {type === 'COLLECTOR' && '🚁 Gadget'}
-            </button>
-          ))}
-        </div>
+              {/* Parallax Clouds */}
+              <div className="absolute top-10 left-[10%] text-6xl opacity-30 select-none">☁️</div>
+              <div className="absolute top-32 left-[50%] text-7xl opacity-30 select-none">☁️</div>
+              <div className="absolute top-16 left-[90%] text-6xl opacity-30 select-none">☁️</div>
+              <div className="absolute top-40 left-[130%] text-7xl opacity-30 select-none">☁️</div>
+              <div className="absolute top-20 left-[180%] text-6xl opacity-30 select-none">☁️</div>
 
-        <div className="w-full max-w-[480px] order-1 lg:order-2 perspective-1000">
-          <div className="bg-[#1A1A1A] border-[10px] border-black shadow-[25px_25px_0px_#000] rounded-t-[60px] overflow-hidden relative">
-            <div className="bg-[#333] h-14 border-b-8 border-black flex items-center justify-between px-10">
-              <div className="text-[#FFD600] font-black italic text-lg tracking-tighter uppercase">NEURAL_ARCADE v5.0</div>
-            </div>
+              {/* Platforms */}
+              {platforms.current.map((p, i) => (
+                <div 
+                  key={i}
+                  className="absolute bg-[#8B4513] border-t-8 border-green-500 shadow-[0_10px_20px_rgba(0,0,0,0.3)]"
+                  style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, height: '100%' }}
+                >
+                  <div className="w-full h-full opacity-10 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#000_10px,#000_11px)]"></div>
+                </div>
+              ))}
 
-            <div className="p-4 bg-[#222]">
-              <div className="crt-screen aspect-[4/5] relative bg-[#000] rounded-2xl border-4 border-[#333] overflow-hidden">
-                {isBooting ? (
-                  <div className="absolute inset-0 bg-black flex flex-col items-center justify-center p-8 z-[60]">
-                    <div className="text-[#0f0] font-mono text-xs w-full overflow-hidden whitespace-nowrap animate-typing">
-                      {'>'} BOOTING SECTOR 0xFF...<br/>{'>'} SYNCING NEURAL NET...
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {gameState === 'START' && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center z-30 bg-black/40 backdrop-blur-[2px]">
-                        <div className="text-7xl mb-6 floating drop-shadow-[0_0_15px_white]">
-                          {activeGame === 'RACER' && '🏎️'} {activeGame === 'SNAKE' && '🐍'} {activeGame === 'PACMAN' && '🟡'} {activeGame === 'COLLECTOR' && '🚁'}
-                        </div>
-                        <h3 className="text-white text-4xl font-black mb-1 italic uppercase tracking-tighter" style={{ WebkitTextStroke: '1px black' }}>{activeGame}</h3>
-                        <button onClick={startGame} className="cartoon-btn bg-[#FF4B4B] text-white px-12 py-5 font-black text-2xl uppercase mt-8">PUSH START</button>
-                      </div>
-                    )}
+              {/* Coins */}
+              {renderState.coins.map((c, i) => !c.collected && (
+                <div 
+                  key={i}
+                  className="absolute text-3xl animate-bounce drop-shadow-md"
+                  style={{ left: `${c.x}%`, top: `${c.y-5}%`, transform: 'translateX(-50%)' }}
+                >
+                  🟡
+                </div>
+              ))}
 
-                    {gameState === 'PLAYING' && (
-                      <div className="w-full h-full relative">
-                        <div className="absolute top-4 left-4 z-40 bg-black/80 border-2 border-[#FFD600] px-3 py-1 text-[#FFD600] font-black text-xs uppercase shadow-lg">
-                          SC: {score} | HI: {highScore}
-                        </div>
-                        {activeGame === 'RACER' && (
-                          <div className="w-full h-full bg-[#1e293b] relative overflow-hidden">
-                            <div className="absolute inset-0 z-0">
-                              <div className="absolute left-1/2 -translate-x-1/2 w-3 h-full flex flex-col gap-10 opacity-40 animate-roadMove">
-                                {[...Array(15)].map((_, i) => <div key={i} className="w-full h-12 bg-white"></div>)}
-                              </div>
-                            </div>
-                            <div className="absolute bottom-10 w-12 h-16 bg-[#00A1FF] border-2 border-black rounded shadow-[3px_3px_0px_#000] z-20" style={{ left: `${playerPos.x}%`, transform: 'translateX(-50%)' }}></div>
-                            {entities.map(e => <div key={e.id} className="absolute text-2xl z-10" style={{ left: `${e.x}%`, top: `${e.y}%`, transform: 'translate(-50%, -50%)' }}>{e.type === 'BUG' ? '👾' : '🔋'}</div>)}
-                          </div>
-                        )}
-                        {activeGame === 'SNAKE' && (
-                          <div className="w-full h-full bg-black relative border-4 border-green-900/40">
-                            <div className="absolute w-4 h-4 bg-green-400 border border-black z-30" style={{ left: `${playerPos.x}%`, top: `${playerPos.y}%` }}></div>
-                            {entities.map((ent, i) => (
-                              <div key={i} className={`absolute ${ent.type === 'FOOD' ? 'w-5 h-5 bg-red-500 animate-pulse rounded-full border border-white' : 'w-4 h-4 bg-green-700 opacity-60 border border-black'}`} style={{ left: `${ent.x}%`, top: `${ent.y}%` }}></div>
-                            ))}
-                          </div>
-                        )}
-                        {activeGame === 'PACMAN' && (
-                          <div className="w-full h-full bg-[#000033] relative border-4 border-blue-900/50 overflow-hidden">
-                            <div className="absolute text-3xl z-30" style={{ left: `${playerPos.x}%`, top: `${playerPos.y}%`, transform: 'translate(-50%, -50%)' }}>🟡</div>
-                            {entities.map((e, i) => (
-                              <div key={i} className={`absolute flex items-center justify-center ${e.type === 'GHOST' ? 'text-2xl animate-bounce' : 'w-2 h-2 bg-yellow-100 rounded-full'}`} style={{ left: `${e.x}%`, top: `${e.y}%`, transform: 'translate(-50%, -50%)' }}>{e.type === 'GHOST' ? '👻' : ''}</div>
-                            ))}
-                          </div>
-                        )}
-                        {activeGame === 'COLLECTOR' && (
-                          <div className="w-full h-full bg-[#FFF9E6] relative overflow-hidden">
-                            <div className="absolute bottom-6 w-16 h-16 z-20" style={{ left: `${playerPos.x}%`, transform: 'translateX(-50%)' }}><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Shinchan" className="w-full h-full" alt="P" /></div>
-                            {entities.map(e => <div key={e.id} className="absolute text-3xl z-10" style={{ left: `${e.x}%`, top: `${e.y}%`, transform: 'translate(-50%, -50%)' }}>{e.type === 'GADGET' ? '🚁' : '👹'}</div>)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {gameState === 'GAMEOVER' && (
-                      <div className="absolute inset-0 bg-red-950/90 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center z-50">
-                        <h3 className="text-white text-5xl font-black mb-10 italic tracking-tighter uppercase">WASTED!</h3>
-                        <button onClick={startGame} className="cartoon-btn bg-white text-black px-12 py-5 font-black text-2xl uppercase hover:bg-[#FFD600]">TRY AGAIN</button>
-                      </div>
-                    )}
-                  </>
-                )}
+              {/* Player - Character Avatar */}
+              <div 
+                className="absolute transition-transform duration-75 ease-out"
+                style={{ 
+                  left: `${renderState.player.x}%`, 
+                  top: `${renderState.player.y}%`, 
+                  transform: `translate(-50%, -100%) scaleX(${renderState.player.facing === 'left' ? -1 : 1})`,
+                  width: '8%',
+                  height: '12%'
+                }}
+              >
+                <img 
+                  src="https://api.dicebear.com/7.x/adventurer/svg?seed=ManishiYadav&backgroundColor=FF4B4B" 
+                  className={`w-full h-full drop-shadow-[0_6px_0_rgba(0,0,0,0.4)] ${renderState.player.isJumping ? 'scale-110 -rotate-12' : ''}`}
+                  alt="Manishi" 
+                />
               </div>
             </div>
 
-            <div className="bg-[#444] px-8 py-12 border-t-[10px] border-black shadow-[inset_0px_10px_30px_rgba(0,0,0,0.6)] relative overflow-hidden">
-              <div className="flex items-center justify-between gap-8 relative z-10">
-                <div className="relative w-36 h-36 flex items-center justify-center">
-                   <div className="absolute w-12 h-32 bg-[#222] border-4 border-black rounded-lg"></div>
-                   <div className="absolute w-32 h-12 bg-[#222] border-4 border-black rounded-lg"></div>
-                   <button onMouseDown={() => { if (activeGame === 'SNAKE' && moveDir.y === 0) setMoveDir({x: 0, y: -5}); else if (activeGame !== 'SNAKE') setMoveDir({x: 0, y: -1}); }} className="absolute top-1 w-10 h-10 text-white text-xl">▲</button>
-                   <button onMouseDown={() => { if (activeGame === 'SNAKE' && moveDir.y === 0) setMoveDir({x: 0, y: 5}); else if (activeGame !== 'SNAKE') setMoveDir({x: 0, y: 1}); }} className="absolute bottom-1 w-10 h-10 text-white text-xl">▼</button>
-                   <button onMouseDown={() => { if (activeGame === 'SNAKE' && moveDir.x === 0) setMoveDir({x: -5, y: 0}); else if (activeGame !== 'SNAKE') setMoveDir({x: -1, y: 0}); }} className="absolute left-1 w-10 h-10 text-white text-xl">◀</button>
-                   <button onMouseDown={() => { if (activeGame === 'SNAKE' && moveDir.x === 0) setMoveDir({x: 5, y: 0}); else if (activeGame !== 'SNAKE') setMoveDir({x: 1, y: 0}); }} className="absolute right-1 w-10 h-10 text-white text-xl">▶</button>
+            {/* Score HUD */}
+            <div className="absolute top-8 left-8 z-50 flex gap-4 pointer-events-none">
+              <div className="bg-black text-white px-5 py-2 font-black text-2xl border-4 border-white shadow-[6px_6px_0px_#000] rotate-[-2deg]">
+                SCORE: {score}
+              </div>
+              <div className="bg-[#FFD600] border-4 border-black px-5 py-2 font-black text-2xl shadow-[6px_6px_0px_#000] rotate-[1deg]">
+                TOP: {highScore}
+              </div>
+            </div>
+
+            {/* Screens Overlay */}
+            {gameState === 'START' && (
+              <div className="absolute inset-0 z-[70] bg-black/40 flex items-center justify-center backdrop-blur-md">
+                <div className="bg-white border-[10px] border-black p-12 shadow-[20px_20px_0px_#FFD600] text-center rotate-1 max-w-sm">
+                  <h3 className="text-6xl font-black mb-6 italic tracking-tighter uppercase">START?</h3>
+                  <p className="font-bold text-gray-500 mb-10 leading-tight uppercase">Collect gadgets and don't fall off the clouds!</p>
+                  <button 
+                    onClick={startGame}
+                    className="cartoon-btn w-full bg-black text-white py-6 font-black text-3xl uppercase tracking-widest"
+                  >
+                    PLAY NOW
+                  </button>
                 </div>
-                <button onClick={() => gameState !== 'PLAYING' && startGame()} className="w-20 h-20 bg-red-600 rounded-full border-[6px] border-black shadow-[8px_8px_0px_#000] active:translate-y-2 text-white font-black text-xl">A</button>
+              </div>
+            )}
+
+            {gameState === 'GAMEOVER' && (
+              <div className="absolute inset-0 z-[70] bg-red-600/50 flex items-center justify-center backdrop-blur-md">
+                <div className="bg-white border-[10px] border-black p-12 shadow-[20px_20px_0px_#000] text-center -rotate-1">
+                  <h3 className="text-6xl font-black mb-4 italic tracking-tighter uppercase text-red-600">GAME OVER!</h3>
+                  <p className="text-2xl font-black mb-10 text-gray-800 uppercase">GADGETS LOST: {score}</p>
+                  <button 
+                    onClick={startGame}
+                    className="cartoon-btn w-full bg-[#00A1FF] text-white py-6 font-black text-3xl uppercase tracking-widest"
+                  >
+                    REBOOT
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* On-Screen Controls for the iPad feel */}
+            <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end z-[80] pointer-events-none">
+              <div className="flex gap-6 pointer-events-auto">
+                <button 
+                  onMouseDown={() => handleBtnDown('MobileLeft')}
+                  onMouseUp={() => handleBtnUp('MobileLeft')}
+                  onMouseLeave={() => handleBtnUp('MobileLeft')}
+                  onTouchStart={(e) => { e.preventDefault(); handleBtnDown('MobileLeft'); }}
+                  onTouchEnd={(e) => { e.preventDefault(); handleBtnUp('MobileLeft'); }}
+                  className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-3xl flex items-center justify-center text-white text-5xl hover:bg-black/40 active:scale-90 transition-all shadow-xl backdrop-blur-sm"
+                >
+                  ◀
+                </button>
+                <button 
+                  onMouseDown={() => handleBtnDown('MobileRight')}
+                  onMouseUp={() => handleBtnUp('MobileRight')}
+                  onMouseLeave={() => handleBtnUp('MobileRight')}
+                  onTouchStart={(e) => { e.preventDefault(); handleBtnDown('MobileRight'); }}
+                  onTouchEnd={(e) => { e.preventDefault(); handleBtnUp('MobileRight'); }}
+                  className="w-24 h-24 bg-black/20 border-4 border-white/30 rounded-3xl flex items-center justify-center text-white text-5xl hover:bg-black/40 active:scale-90 transition-all shadow-xl backdrop-blur-sm"
+                >
+                  ▶
+                </button>
+              </div>
+              <div className="pointer-events-auto">
+                <button 
+                  onMouseDown={() => handleBtnDown('MobileJump')}
+                  onMouseUp={() => handleBtnUp('MobileJump')}
+                  onMouseLeave={() => handleBtnUp('MobileJump')}
+                  onTouchStart={(e) => { e.preventDefault(); handleBtnDown('MobileJump'); }}
+                  onTouchEnd={(e) => { e.preventDefault(); handleBtnUp('MobileJump'); }}
+                  className="w-28 h-28 bg-[#FF4B4B] border-[6px] border-black rounded-full flex items-center justify-center text-white font-black text-3xl shadow-[0_12px_0_#000] active:shadow-none active:translate-y-3 transition-all"
+                >
+                  JUMP
+                </button>
               </div>
             </div>
           </div>
+
+          {/* iPad Home Indicator Bar */}
+          <div className="h-2 w-48 bg-white/20 rounded-full mx-auto mt-4 self-center"></div>
+        </div>
+
+        <div className="mt-12 flex items-center gap-6">
+           <div className="bg-black text-white px-4 py-2 font-black uppercase text-xs">Keyboard Controls: [←][→] Move | [Space] Jump</div>
+           <div className="w-10 h-10 animate-bounce text-3xl">👇</div>
         </div>
       </div>
-      <style>{`
-        @keyframes roadMove {
-          from { transform: translate(-50%, -50px); }
-          to { transform: translate(-50%, 0px); }
-        }
-        .animate-roadMove { animation: roadMove 0.4s linear infinite; }
-      `}</style>
     </section>
   );
 };
