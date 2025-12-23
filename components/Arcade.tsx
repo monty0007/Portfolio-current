@@ -32,15 +32,23 @@ const NeuralNinja: React.FC<{
   );
 };
 
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+}
+
 const Arcade: React.FC = () => {
-  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
+  const [gameState, setGameState] = useState<'START' | 'ENTER_NAME' | 'PLAYING' | 'GAMEOVER'>('START');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [powerTimeLeft, setPowerTimeLeft] = useState(0);
+  const [playerName, setPlayerName] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [lastSavedScore, setLastSavedScore] = useState<number | null>(null);
 
   // PHYSICS TWEAKS
-  const GRAVITY = 0.6; // Increased from 0.55 for faster falling
-  const JUMP_FORCE = -9; // Reduced from -11 for a shorter, more controlled jump
+  const GRAVITY = 0.6;
+  const JUMP_FORCE = -9;
   const ACCELERATION = 0.04;
   const FRICTION = 0.88;
   const MAX_SPEED = 0.65;
@@ -50,7 +58,7 @@ const Arcade: React.FC = () => {
   const keys = useRef<{ [key: string]: boolean }>({});
   
   const playerRef = useRef({ 
-    x: 10, y: 50, vx: 0, vy: 0, 
+    x: 5, y: 50, vx: 0, vy: 0, 
     isJumping: false, 
     facing: 'right' as 'left' | 'right', 
     isWalking: false,
@@ -61,6 +69,7 @@ const Arcade: React.FC = () => {
   const cameraRef = useRef(0);
   const coinsRef = useRef<{ x: number, y: number, collected: boolean, type: 'coin' | 'power' }[]>([]);
   
+  // EXTENDED LEVEL CONTENT - ADDED MANY MORE TO PREVENT "ENDING"
   const obstaclesRef = useRef([
     { x: 120, y: 75, range: 25, startX: 115, dir: 1, type: 'ground' },
     { x: 235, y: 75, range: 40, startX: 235, dir: 1, type: 'ground' },
@@ -68,6 +77,15 @@ const Arcade: React.FC = () => {
     { x: 300, y: 20, range: 50, startX: 300, dir: -1, type: 'fly', phase: Math.PI },
     { x: 450, y: 65, range: 60, startX: 450, dir: 1, type: 'ground' },
     { x: 600, y: 35, range: 40, startX: 600, dir: -1, type: 'fly', phase: 0.5 },
+    { x: 850, y: 70, range: 30, startX: 850, dir: 1, type: 'ground' },
+    { x: 1100, y: 20, range: 80, startX: 1100, dir: 1, type: 'fly' },
+    { x: 1400, y: 65, range: 40, startX: 1400, dir: -1, type: 'ground' },
+    { x: 1750, y: 40, range: 100, startX: 1750, dir: 1, type: 'fly' },
+    { x: 2100, y: 75, range: 50, startX: 2100, dir: 1, type: 'ground' },
+    { x: 2400, y: 30, range: 120, startX: 2400, dir: -1, type: 'fly' },
+    { x: 3000, y: 75, range: 200, startX: 3000, dir: 1, type: 'ground' },
+    { x: 3500, y: 25, range: 150, startX: 3500, dir: -1, type: 'fly' },
+    { x: 4000, y: 70, range: 50, startX: 4000, dir: 1, type: 'ground' },
   ]);
 
   const platforms = useRef([
@@ -76,57 +94,119 @@ const Arcade: React.FC = () => {
     { x: 90, y: 50, w: 20 },
     { x: 120, y: 75, w: 80 },
     { x: 210, y: 60, w: 30 },
-    { x: 250, y: 80, w: 100 },
-    { x: 360, y: 60, w: 25 },
-    { x: 395, y: 45, w: 20 },
-    { x: 425, y: 75, w: 60 },
-    { x: 500, y: 80, w: 150 },
-    { x: 670, y: 60, w: 40 },
-    { x: 730, y: 50, w: 200 },
+    { x: 250, y: 80, w: 150 },
+    { x: 420, y: 60, w: 40 },
+    { x: 480, y: 45, w: 40 },
+    { x: 540, y: 75, w: 100 },
+    { x: 660, y: 55, w: 60 },
+    { x: 750, y: 80, w: 200 },
+    { x: 980, y: 60, w: 50 },
+    { x: 1050, y: 40, w: 30 },
+    { x: 1100, y: 80, w: 300 },
+    { x: 1450, y: 65, w: 80 },
+    { x: 1550, y: 45, w: 40 },
+    { x: 1620, y: 80, w: 500 },
+    { x: 2150, y: 60, w: 60 },
+    { x: 2250, y: 80, w: 1000 },
+    { x: 3300, y: 60, w: 40 },
+    { x: 3400, y: 40, w: 50 },
+    { x: 3500, y: 80, w: 10000 }, // Ultra-long endgame platform to prevent accidental score cap
   ]);
 
   const [renderState, setRenderState] = useState({
-    player: { x: 10, y: 50, facing: 'right' as 'left' | 'right', isJumping: false, isWalking: false, isPowered: false },
+    player: { x: 5, y: 50, facing: 'right' as 'left' | 'right', isJumping: false, isWalking: false, isPowered: false },
     cameraX: 0,
     coins: [] as { x: number, y: number, collected: boolean, type: string }[],
     obstacles: [] as { x: number, y: number, type: string }[]
   });
 
+  // Load Leaderboard from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('ninja_leaderboard');
+    if (saved) {
+      setLeaderboard(JSON.parse(saved));
+    }
+  }, []);
+
+  const saveScore = (finalScore: number) => {
+    if (!playerName.trim()) return;
+    
+    setLeaderboard(prev => {
+      const existingEntryIndex = prev.findIndex(e => e.name === playerName);
+      let updatedList = [...prev];
+
+      if (existingEntryIndex !== -1) {
+        // If player already exists, only update if the new score is higher
+        if (finalScore > updatedList[existingEntryIndex].score) {
+          updatedList[existingEntryIndex] = { name: playerName, score: finalScore };
+        }
+      } else {
+        // New player
+        updatedList.push({ name: playerName, score: finalScore });
+      }
+
+      // Sort and keep top 5 unique players
+      const updated = updatedList
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+        
+      localStorage.setItem('ninja_leaderboard', JSON.stringify(updated));
+      return updated;
+    });
+    setLastSavedScore(finalScore);
+  };
+
   const startGame = () => {
-    playerRef.current = { x: 10, y: 50, vx: 0, vy: 0, isJumping: false, facing: 'right', isWalking: false, isPowered: false, powerTimeout: 0 };
+    playerRef.current = { x: 5, y: 50, vx: 0, vy: 0, isJumping: false, facing: 'right', isWalking: false, isPowered: false, powerTimeout: 0 };
     cameraRef.current = 0;
-    coinsRef.current = [
-      { x: 58, y: 55, collected: false, type: 'coin' },
-      { x: 95, y: 40, collected: false, type: 'coin' },
-      { x: 150, y: 65, collected: false, type: 'power' },
-      { x: 215, y: 50, collected: false, type: 'coin' },
-      { x: 300, y: 70, collected: false, type: 'coin' },
-      { x: 410, y: 35, collected: false, type: 'coin' },
-      { x: 520, y: 70, collected: false, type: 'power' },
-      { x: 600, y: 70, collected: false, type: 'coin' },
-      { x: 700, y: 50, collected: false, type: 'coin' },
-    ];
+    
+    // GENERATE MANY COINS FOR HIGH SCORE POTENTIAL - INCREASED RANGE
+    const manyCoins = [];
+    for(let i=0; i<150; i++) {
+        manyCoins.push({ 
+            x: 50 + (i * 40), 
+            y: 30 + Math.random() * 40, 
+            collected: false, 
+            type: (i % 12 === 0) ? 'power' : 'coin' 
+        });
+    }
+    coinsRef.current = manyCoins;
+    
     setScore(0);
     setPowerTimeLeft(0);
+    setLastSavedScore(null);
     gameRunning.current = true;
     setGameState('PLAYING');
   };
 
-  const handleGameOver = () => {
+  const handleGameOver = (currentScore: number) => {
     gameRunning.current = false;
     setGameState('GAMEOVER');
+    saveScore(currentScore);
   };
 
+  // Prevent browser scrolling when playing
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => (keys.current[e.code] = true);
-    const handleKeyUp = (e: KeyboardEvent) => (keys.current[e.code] = false);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const controlKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+      if (gameState === 'PLAYING' && controlKeys.includes(e.code)) {
+        e.preventDefault();
+      }
+      keys.current[e.code] = true;
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keys.current[e.code] = false;
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [gameState]);
 
   useEffect(() => {
     if (gameState !== 'PLAYING') return;
@@ -167,7 +247,6 @@ const Arcade: React.FC = () => {
         p.isJumping = true;
       }
 
-      // Variable jump height: release jump button to stop upward momentum
       if (!isJumpPressed && p.vy < -2) {
         p.vy *= 0.6;
       }
@@ -204,15 +283,15 @@ const Arcade: React.FC = () => {
         const dy = Math.abs(obs.y - (p.y - 5));
         if (dx < 5 && dy < 8) {
           if (p.isPowered) {
-            obs.y = 200;
+            obs.y = 500; // Knock out of screen
             setScore(s => s + 500);
           } else {
-            handleGameOver();
+            handleGameOver(score);
           }
         }
       });
 
-      if (p.y > 120) { handleGameOver(); return; }
+      if (p.y > 120) { handleGameOver(score); return; }
 
       const targetCam = p.x - 45;
       cameraRef.current += (targetCam - cameraRef.current) * 0.1;
@@ -250,7 +329,7 @@ const Arcade: React.FC = () => {
 
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
-  }, [gameState]);
+  }, [gameState, score]);
 
   useEffect(() => {
     if (score > highScore) setHighScore(score);
@@ -265,15 +344,15 @@ const Arcade: React.FC = () => {
       <div className="max-w-6xl w-full flex flex-col items-center justify-center relative z-10">
         <header className="text-center mb-10">
           <div className="inline-block bg-black text-white px-6 py-2 font-black uppercase text-xl mb-4 rotate-[-1deg] shadow-[6px_6px_0px_#00A1FF]">
-            NEURAL ARCADE V5.2
+            NEURAL ARCADE V5.4
           </div>
           <h2 className="text-5xl sm:text-7xl md:text-[8rem] font-black uppercase tracking-tighter leading-none">
             ACTION <span className="text-white" style={{ WebkitTextStroke: '2px black', textShadow: '8px 8px 0px #FF4B4B' }}>BASTION</span>
           </h2>
         </header>
 
-        {/* Optimized Game Container for all screens */}
-        <div className="w-full max-w-[1000px] aspect-[4/5] sm:aspect-[16/9] bg-[#111] border-[8px] sm:border-[12px] border-black rounded-[2rem] sm:rounded-[4rem] shadow-[15px_15px_0px_#000] sm:shadow-[40px_40px_0px_#000] relative overflow-hidden flex flex-col p-2 sm:p-4">
+        {/* Game Cabinet */}
+        <div className="w-full max-w-[1000px] aspect-[4/5] sm:aspect-[16/9] bg-[#111] border-[8px] sm:border-[12px] border-black rounded-[2rem] sm:rounded-[4rem] shadow-[15px_15px_0px_#000] sm:shadow-[40px_40px_0px_#000] relative overflow-hidden flex flex-col p-2 sm:p-4 mb-16">
           
           <div className="flex-1 rounded-[1.5rem] sm:rounded-[3rem] bg-gradient-to-b from-sky-400 to-sky-200 overflow-hidden relative border-2 sm:border-4 border-black/30 crt-screen">
             <div 
@@ -338,7 +417,7 @@ const Arcade: React.FC = () => {
                 {score}
               </div>
               <div className="bg-white border-2 sm:border-4 border-black px-3 sm:px-6 py-1 sm:py-2 font-black text-lg sm:text-3xl shadow-[4px_4px_0px_#000]">
-                PEAK: {highScore}
+                {playerName ? `${playerName}: ` : ''} {highScore}
               </div>
             </div>
 
@@ -347,7 +426,30 @@ const Arcade: React.FC = () => {
               <div className="absolute inset-0 z-[150] bg-black/80 flex items-center justify-center p-4">
                 <div className="bg-white border-[8px] border-black p-6 sm:p-12 shadow-[15px_15px_0px_#FFD600] text-center rotate-1 w-full max-w-lg">
                   <h3 className="text-5xl sm:text-8xl font-black mb-4 italic uppercase leading-none">READY?</h3>
-                  <button onClick={startGame} className="cartoon-btn w-full bg-black text-white py-4 sm:py-8 font-black text-3xl sm:text-5xl uppercase">DEPLOY!</button>
+                  <button onClick={() => setGameState('ENTER_NAME')} className="cartoon-btn w-full bg-black text-white py-4 sm:py-8 font-black text-3xl sm:text-5xl uppercase">DEPLOY!</button>
+                </div>
+              </div>
+            )}
+
+            {gameState === 'ENTER_NAME' && (
+              <div className="absolute inset-0 z-[150] bg-black/80 flex items-center justify-center p-4">
+                <div className="bg-white border-[8px] border-black p-6 sm:p-10 shadow-[15px_15px_0px_#00A1FF] text-center -rotate-1 w-full max-w-lg">
+                  <h3 className="text-3xl sm:text-5xl font-black mb-6 uppercase tracking-tight">LOG IN, NINJA</h3>
+                  <input 
+                    type="text"
+                    maxLength={10}
+                    placeholder="NAME..."
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value.toUpperCase())}
+                    className="w-full p-4 border-4 border-black font-black text-2xl sm:text-4xl text-center uppercase focus:bg-yellow-50 outline-none mb-6"
+                  />
+                  <button 
+                    disabled={!playerName.trim()}
+                    onClick={startGame} 
+                    className="cartoon-btn w-full bg-[#FF4B4B] text-white py-4 sm:py-6 font-black text-3xl uppercase disabled:opacity-50"
+                  >
+                    START SEQUENCE
+                  </button>
                 </div>
               </div>
             )}
@@ -356,12 +458,16 @@ const Arcade: React.FC = () => {
               <div className="absolute inset-0 z-[150] bg-red-600/80 flex items-center justify-center p-4">
                 <div className="bg-white border-[8px] border-black p-6 sm:p-12 shadow-[15px_15px_0px_#000] text-center -rotate-1 w-full max-w-lg">
                   <h3 className="text-4xl sm:text-7xl font-black mb-4 text-red-600 uppercase leading-none">SYSTEM CRASHED</h3>
+                  <div className="mb-2 font-black text-2xl uppercase">SCORE: {score}</div>
+                  {lastSavedScore !== null && (
+                    <div className="mb-6 text-green-600 font-black text-sm uppercase">✅ RECORDED ON LEADERBOARD</div>
+                  )}
                   <button onClick={startGame} className="cartoon-btn w-full bg-[#00A1FF] text-white py-4 sm:py-8 font-black text-3xl sm:text-5xl uppercase">REBOOT</button>
                 </div>
               </div>
             )}
             
-            {/* Optimized Mobile Controls - Semi-transparent and out of the way */}
+            {/* Mobile Controls */}
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end z-[200] pointer-events-none">
               <div className="flex gap-4 pointer-events-auto">
                 <button 
@@ -382,6 +488,37 @@ const Arcade: React.FC = () => {
                   className="w-20 h-20 bg-[#FF4B4B]/80 border-[4px] border-black rounded-full flex items-center justify-center text-white font-black text-xl shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none"
                 >JUMP</button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Leaderboard Section */}
+        <div className="w-full max-w-3xl">
+          <div className="bg-black text-[#FFD600] px-6 py-2 font-black uppercase text-xl inline-block rotate-1 shadow-[6px_6px_0px_#000] mb-4">
+            TOP 5 NINJA SQUAD
+          </div>
+          <div className="bg-white border-[6px] border-black p-8 shadow-[12px_12px_0px_#000] -rotate-1">
+            {leaderboard.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 font-black uppercase text-xl">No stats found. Be the first!</div>
+            ) : (
+              <div className="space-y-4">
+                {leaderboard.map((entry, i) => (
+                  <div key={i} className={`flex items-center justify-between border-b-4 border-black/5 pb-2 ${entry.name === playerName ? 'bg-yellow-50' : ''}`}>
+                    <div className="flex items-center gap-6">
+                      <span className="text-4xl font-black text-[#FF4B4B]">#{i + 1}</span>
+                      <span className="text-2xl font-black uppercase">{entry.name}</span>
+                      {entry.name === playerName && entry.score === lastSavedScore && (
+                         <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full font-black">NEW BEST!</span>
+                      )}
+                    </div>
+                    <div className="text-3xl font-black text-[#00A1FF]">{entry.score.toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-8 border-t-4 border-black pt-4 flex justify-between items-center text-[10px] font-black uppercase text-gray-400">
+               <span>V-ARCHIVE_LOCAL</span>
+               <span>SYNC_STABLE</span>
             </div>
           </div>
         </div>
