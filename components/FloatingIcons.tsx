@@ -2,6 +2,10 @@
 import React from 'react';
 
 const FloatingIcons: React.FC = () => {
+  // Vector SVG data URIs
+  const powerAppsSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iIzc0Mjc3NCIgZD0iTTEyLjQ0IDM1LjJsMTIuNCAxMi40Yy41NS41NSAxLjQ0LjU1IDEuOTkgMGwxNy44MS0xNy44MWMuNTUtLjU1LjU1LTEuNDQgMC0xLjk5TDMyLjI0IDE1LjQgMTIuNDQgMzUuMnoiLz48cGF0aCBmaWxsPSIjQzE2QUMxIiBkPSJNMzUuMSAxMi4zNWwtMTIuNC0xMi40Yy0uNTUtLjU1LTEuNDQtLjU1LTEuOTkgMEwyLjg5IDE3Ljc2Yy0uNTUuNTUtLjU1IDEuNDQgMCAxLjk5bDEyLjQgMTIuNCAxOS44MS0xOS44eiIvPjxwYXRoIGZpbGw9IiNEOTk5RDkiIGQ9Ik0zMi4yNCAxNS40TDE1LjMgMzIuMzVsMTIuNCAxMi40Yy41NS41NSAxLjQ0LjU1IDEuOTkgMGwxMi40LTEyLjRjLjU1LS41NS41NS0xLjQ0IDAtMS45OUwzMi4yNCAxNS40eiIvPjwvc3ZnPg==`;
+  const powerAutomateSvg = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCI+PHBhdGggZmlsbD0iIzAwNUE5RSIgZD0iTTMuNyAxMS4zbDEyLjQtMTIuNGMuNS0uNSAxLjQtLjUgMS45IDBMNDQuMyAyNS4yYy41LjUuNSAxLjQgMCAxLjlsLTEyLjQgMTIuNE0zLjcgMTEuM3oiLz48cGF0aCBmaWxsPSIjMTA2RUJFIiBkPSJNMjEgMjguNmwxMi40IDEyLjRjLjUuNSAxLjQuNSAxLjkgMGwxMi40LTEyLjRjLjUtLjUuNS0xLjQgMC0xLjlMMjEgMjguNnoiLz48cGF0aCBmaWxsPSIjM0E5NkREIiBkPSJNMjEgMjguNkw0LjcgMTIuM2MtLjUtLjUtLjUtMS40IDAtMS45bDEyLjQtMTIuNGMuNS0uNSAxLjQtLjUgMS45IDBsMzEuNyAzMS43Yy41LjUuNSAxLjQgMCAxLjlsLTEyLjQgMTIuNEwyMSAyOC42eiIvPjwvc3ZnPg==`;
+
   // Tech Logos that move/float
   const techLogos = [
     { id: 'react', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', x: '2%', y: '10%', size: '200px', rotate: '-15deg', opacity: 0.08, delay: '0s' },
@@ -10,6 +14,8 @@ const FloatingIcons: React.FC = () => {
     { id: 'node', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg', x: '85%', y: '50%', size: '150px', rotate: '-8deg', opacity: 0.08, delay: '1s' },
     { id: 'docker', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg', x: '10%', y: '80%', size: '220px', rotate: '10deg', opacity: 0.06, delay: '3s' },
     { id: 'ts', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg', x: '75%', y: '85%', size: '180px', rotate: '-12deg', opacity: 0.05, delay: '5s' },
+    { id: 'powerapps', url: powerAppsSvg, x: '25%', y: '30%', size: '150px', rotate: '20deg', opacity: 0.07, delay: '2.5s' },
+    { id: 'powerauto', url: powerAutomateSvg, x: '65%', y: '20%', size: '160px', rotate: '-10deg', opacity: 0.07, delay: '3.5s' },
   ];
 
   // Static Tech Stamps (Subtle printed blueprint layer)
