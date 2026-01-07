@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import FloatingIcons from './components/FloatingIcons';
@@ -16,6 +16,11 @@ const AppContent: React.FC = () => {
   
   const [targetSection, setTargetSection] = useState<string | null>(null);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   const handleNavigate = (newView: 'home' | 'blog' | 'admin', sectionId?: string) => {
     if (newView === 'admin') {
       setShowLoginModal(true);
@@ -24,7 +29,6 @@ const AppContent: React.FC = () => {
 
     if (newView === 'blog') {
        navigate('/blog');
-       window.scrollTo({ top: 0, behavior: 'instant' });
        return;
     }
 
