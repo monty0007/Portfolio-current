@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { getTopScores, saveScore as saveScoreToDb } from '../services/scoreService';
 
 // Animated Sprite Component
 const NeuralNinja: React.FC<{ 
@@ -120,39 +120,38 @@ const Arcade: React.FC = () => {
     obstacles: [] as { x: number, y: number, type: string }[]
   });
 
-  // Load Leaderboard from localStorage
+  // Load Leaderboard from DB
   useEffect(() => {
-    const saved = localStorage.getItem('ninja_leaderboard');
-    if (saved) {
-      setLeaderboard(JSON.parse(saved));
-    }
-  }, []);
+    const fetchScores = async () => {
+        const scores = await getTopScores();
+        setLeaderboard(scores);
+    };
+    fetchScores();
+  }, [gameState]); // Refresh when game state changes (e.g. after game over)
 
-  const saveScore = (finalScore: number) => {
+  const saveScore = async (finalScore: number) => {
     if (!playerName.trim()) return;
     
+    // Optimistic UI update
     setLeaderboard(prev => {
       const existingEntryIndex = prev.findIndex(e => e.name === playerName);
       let updatedList = [...prev];
 
       if (existingEntryIndex !== -1) {
-        // If player already exists, only update if the new score is higher
         if (finalScore > updatedList[existingEntryIndex].score) {
           updatedList[existingEntryIndex] = { name: playerName, score: finalScore };
         }
       } else {
-        // New player
         updatedList.push({ name: playerName, score: finalScore });
       }
 
-      // Sort and keep top 5 unique players
-      const updated = updatedList
+      return updatedList
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
-        
-      localStorage.setItem('ninja_leaderboard', JSON.stringify(updated));
-      return updated;
     });
+
+    // Save to DB
+    await saveScoreToDb(playerName, finalScore);
     setLastSavedScore(finalScore);
   };
 

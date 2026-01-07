@@ -105,8 +105,8 @@ const Projects: React.FC = () => {
   }
 
   let galleryProgress = 0;
-  if (scrollProgress > 0.45) {
-    galleryProgress = Math.min((scrollProgress - 0.45) / 0.55, 1);
+  if (scrollProgress > 0.30) {
+    galleryProgress = Math.min((scrollProgress - 0.30) / 0.60, 1);
   }
 
   const titleX = 50 - (pinProgress * 44);
@@ -120,9 +120,9 @@ const Projects: React.FC = () => {
     <section 
       ref={sectionRef}
       id="projects" 
-      className="relative h-[600vh] bg-[#FFF9E6] border-y-8 border-black"
+      className="relative h-[450vh] bg-[#FFF9E6] border-y-8 border-black"
     >
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none sticky top-0 h-screen"
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none  top-0 h-screen"
            style={{ backgroundImage: `linear-gradient(#000 2px, transparent 2px), linear-gradient(90deg, #000 2px, transparent 2px)`, 
                     backgroundSize: '80px 80px' }}>
       </div>
@@ -153,8 +153,7 @@ const Projects: React.FC = () => {
           className="flex items-center h-full transition-all duration-75 ease-out"
           style={{ 
             transform: `translateX(${currentTranslate}vw)`,
-            opacity: pinProgress > 0 ? 1 : 0,
-            visibility: pinProgress > 0 ? 'visible' : 'hidden'
+            opacity: Math.min(pinProgress * 3, 1),
           }}
         >
           {PROJECTS.map((project, index) => (

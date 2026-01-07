@@ -21,9 +21,10 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
     try {
         const slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         const sectionsStr = JSON.stringify(post.sections || []);
+        const tagsStr = JSON.stringify(post.tags || []);
         
         await db.execute({
-            sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content, author, read_time, image_url, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
                 slug, 
                 post.title, 
@@ -32,7 +33,11 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
                 post.category || 'General', 
                 post.color || '#000000', 
                 sectionsStr, 
-                post.content || ''
+                post.content || '',
+                post.author || 'Manishi Yadav',
+                post.readTime || '5 min',
+                post.image || '',
+                tagsStr
             ]
         });
         return true;

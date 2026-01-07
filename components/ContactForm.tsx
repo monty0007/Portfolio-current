@@ -1,23 +1,70 @@
-
 import React, { useState } from 'react';
+import emailjs from '@emailjs/browser';
 
 const ContactForm: React.FC = () => {
   const [formState, setFormState] = useState<'idle' | 'sending' | 'success'>('idle');
   const [formData, setFormData] = useState({
-    name: '',
+    firstname: '',
+    lastname: '',
     email: '',
-    subject: 'RAG Gadget',
+    phone: '',
+    service: 'RAG Gadget',
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormState('sending');
-    setTimeout(() => {
-      setFormState('success');
-      setFormData({ name: '', email: '', subject: 'RAG Gadget', message: '' });
-      setTimeout(() => setFormState('idle'), 5000);
-    }, 1500);
+    
+    // EmailJS Credentials from env
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      console.error('EmailJS credentials missing in .env');
+      alert('Action Bastion! Email service not configured. 🤖💥');
+      setFormState('idle');
+      return;
+    }
+
+    try {
+      const templateParams = {
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        email: formData.email,
+        phone: formData.phone,
+        service: formData.service,
+        message: formData.message,
+        to_email: 'monty.my1234@gmail.com'
+      };
+
+      const result = await emailjs.send(
+        serviceId,
+        templateId,
+        templateParams,
+        publicKey
+      );
+
+      if (result.status === 200) {
+        setFormState('success');
+        setFormData({ 
+          firstname: '', 
+          lastname: '', 
+          email: '', 
+          phone: '', 
+          service: 'RAG Gadget', 
+          message: '' 
+        });
+        setTimeout(() => setFormState('idle'), 5000);
+      } else {
+        throw new Error('EmailJS failed to send');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Action Bastion! Network error! 🤖💥');
+      setFormState('idle');
+    }
   };
 
   if (formState === 'success') {
@@ -50,8 +97,8 @@ const ContactForm: React.FC = () => {
               required
               type="text" 
               placeholder="Who are you?"
-              value={formData.name}
-              onChange={e => setFormData({...formData, name: e.target.value})}
+              value={formData.firstname}
+              onChange={e => setFormData({...formData, firstname: e.target.value})}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 transition-all text-black placeholder-gray-400 text-sm md:text-base"
             />
           </div>
@@ -72,8 +119,8 @@ const ContactForm: React.FC = () => {
           <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Gadget of Interest</label>
           <div className="relative">
             <select 
-              value={formData.subject}
-              onChange={e => setFormData({...formData, subject: e.target.value})}
+              value={formData.service}
+              onChange={e => setFormData({...formData, service: e.target.value})}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 bg-white text-black text-sm md:text-base appearance-none"
             >
               <option>RAG Gadget</option>

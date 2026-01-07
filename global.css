@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Global defaults */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#FFF9E6] text-[#1A1A1A] font-[Fredoka] overflow-x-hidden;
+  }
+}

@@ -33,7 +33,7 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
 
     case 'code':
       return (
-        <div className="my-10 bg-[#1A1A1A] border-[4px] border-black rounded-xl overflow-hidden shadow-[10px_10px_0px_#000] relative">
+        <div className="my-10 bg-[#1A1A1A] border-4 border-black rounded-xl overflow-hidden shadow-[10px_10px_0px_#000] relative">
           <div className="bg-white border-b-4 border-black px-4 py-2 flex items-center justify-between">
             <div className="flex gap-2">
               <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-black"></div>
@@ -50,7 +50,7 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
 
     case 'note':
       return (
-        <div className="my-10 bg-[#FFD600] border-[4px] border-black p-8 shadow-[10px_10px_0px_#000] -rotate-1 relative group hover:rotate-0 transition-transform">
+        <div className="my-10 bg-[#FFD600] border-4 border-black p-8 shadow-[10px_10px_0px_#000] -rotate-1 relative group hover:rotate-0 transition-transform">
           <div className="absolute -top-6 -left-6 text-5xl group-hover:scale-125 transition-transform">📌</div>
           <h4 className="font-black uppercase text-xl mb-2 underline decoration-4 text-black">Gadget Insight:</h4>
           <p className="font-bold text-xl italic text-black">{section.content}</p>
@@ -82,17 +82,19 @@ const Blog: React.FC = () => {
     }
   }, [selectedPost]);
 
-  const filteredBlogs = blogs.filter(b => 
-    b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    // b.category.toLowerCase().includes(searchTerm.toLowerCase()) // Category might not exist on DB posts yet? 
-    // Adapting for new simplified model or need to ensure model match
-    (b as any).category?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    true 
-  );
+  const filteredBlogs = blogs.filter(b => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      b.title.toLowerCase().includes(searchLower) ||
+      (b as any).category?.toLowerCase().includes(searchLower) ||
+      b.excerpt.toLowerCase().includes(searchLower) ||
+      (b.tags && b.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+    );
+  });
 
   if (selectedPost) {
     return (
-      <div className="min-h-screen bg-white pt-32 pb-20 px-6 animate-in slide-in-from-bottom duration-500">
+      <div className="min-h-screen bg-white pt-48 pb-20 px-6 animate-in slide-in-from-bottom duration-500">
         <div className="max-w-4xl mx-auto">
           <button 
             onClick={() => setSelectedPost(null)}
@@ -115,10 +117,15 @@ const Blog: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-             {/* Simple renderer for now if sections not present yet in DB schema or handle content */}
-            <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed mb-8">{selectedPost.content}</p>
+            {selectedPost.sections && selectedPost.sections.length > 0 ? (
+              selectedPost.sections.map((section, idx) => (
+                <SectionRenderer key={idx} section={section} />
+              ))
+            ) : (
+              <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed mb-8">{selectedPost.content}</p>
+            )}
             
-            <div className="pt-20 mt-20 border-t-[8px] border-black text-center">
+            <div className="pt-20 mt-20 border-t-8 border-black text-center">
               <div className="text-8xl mb-4">🏮</div>
               <p className="font-black uppercase text-2xl tracking-tighter italic text-black">
                 Transmission Terminated.
@@ -140,7 +147,7 @@ const Blog: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9E6] pt-32 pb-20 px-6">
+    <div className="min-h-screen bg-[#FFF9E6] pt-48 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
           <header>
