@@ -59,7 +59,7 @@ const Hero: React.FC = () => {
 
       <div className="max-w-6xl w-full text-center z-10">
         <div className="inline-block bg-[#FF4B4B] text-white px-4 md:px-6 py-2 text-sm md:text-base font-black cartoon-btn mb-4 md:mb-6 rotate-[-2deg] shadow-[4px_4px_0px_#000] cursor-default">
-          HI! I'M Manish Yadav
+          Hi, I'm Manish Yadav
         </div>
 
         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7rem] font-black leading-[0.9] mb-4 md:mb-6 uppercase tracking-tighter break-words">

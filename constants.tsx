@@ -17,7 +17,7 @@ export const PROJECTS: Project[] = [
     id: '2',
     title: 'Power Quote',
     description: 'A live Power Apps solution for managing quotations and purchase orders, with automated Word and PDF generation.',
-    image: '/powerquote.png',
+    image: '/screen.png',
     tags: ['Power Apps', 'Power Automate', 'SharePoint / Dataverse', 'Word Templates'],
     color: '#FF4B4B',
     link: 'na',
@@ -62,7 +62,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: '3',
-    title: 'IIT Bombay Hackathon – 2nd Place',
+    title: 'Smart India Hackathon 2nd Place',
     issuer: 'Indian Institute of Technology Bombay',
     date: '2024',
     icon: '🥈',
