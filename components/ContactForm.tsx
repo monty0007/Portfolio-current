@@ -15,7 +15,7 @@ const ContactForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormState('sending');
-    
+
     // EmailJS Credentials from env
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -48,13 +48,13 @@ const ContactForm: React.FC = () => {
 
       if (result.status === 200) {
         setFormState('success');
-        setFormData({ 
-          firstname: '', 
-          lastname: '', 
-          email: '', 
-          phone: '', 
-          service: 'RAG Gadget', 
-          message: '' 
+        setFormData({
+          firstname: '',
+          lastname: '',
+          email: '',
+          phone: '',
+          service: 'RAG Gadget',
+          message: ''
         });
         setTimeout(() => setFormState('idle'), 5000);
       } else {
@@ -73,7 +73,7 @@ const ContactForm: React.FC = () => {
         <div className="text-6xl md:text-8xl mb-6">🚀</div>
         <h3 className="text-3xl md:text-4xl font-black uppercase mb-4 italic">Action Bastion!</h3>
         <p className="text-lg md:text-xl font-bold text-gray-700">Message beamed to Manish's Lab. Expect a ping soon!</p>
-        <button 
+        <button
           onClick={() => setFormState('idle')}
           className="mt-10 cartoon-btn bg-black text-white px-8 py-3 font-black uppercase w-full sm:w-auto"
         >
@@ -93,23 +93,23 @@ const ContactForm: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
           <div>
             <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Ninja Name</label>
-            <input 
+            <input
               required
-              type="text" 
+              type="text"
               placeholder="Who are you?"
               value={formData.firstname}
-              onChange={e => setFormData({...formData, firstname: e.target.value})}
+              onChange={e => setFormData({ ...formData, firstname: e.target.value })}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 transition-all text-black placeholder-gray-400 text-sm md:text-base"
             />
           </div>
           <div>
             <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Signal (Email)</label>
-            <input 
+            <input
               required
-              type="email" 
+              type="email"
               placeholder="How do I reach you?"
               value={formData.email}
-              onChange={e => setFormData({...formData, email: e.target.value})}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 transition-all text-black placeholder-gray-400 text-sm md:text-base"
             />
           </div>
@@ -118,14 +118,14 @@ const ContactForm: React.FC = () => {
         <div>
           <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Gadget of Interest</label>
           <div className="relative">
-            <select 
+            <select
               value={formData.service}
-              onChange={e => setFormData({...formData, service: e.target.value})}
+              onChange={e => setFormData({ ...formData, service: e.target.value })}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 bg-white text-black text-sm md:text-base appearance-none"
             >
               <option>RAG Gadget</option>
               <option>Agentic Workflow</option>
-              <option>Visual Prompting</option>
+              <option>Power Platform</option>
               <option>Custom AI Magic</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-black">
@@ -136,19 +136,19 @@ const ContactForm: React.FC = () => {
 
         <div>
           <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Mission Brief (Message)</label>
-          <textarea 
+          <textarea
             required
             rows={4}
             placeholder="Tell me about your project..."
             value={formData.message}
-            onChange={e => setFormData({...formData, message: e.target.value})}
+            onChange={e => setFormData({ ...formData, message: e.target.value })}
             className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 transition-all text-black placeholder-gray-400 text-sm md:text-base"
           />
         </div>
 
-        <button 
+        <button
           disabled={formState === 'sending'}
-          type="submit" 
+          type="submit"
           className="cartoon-btn w-full bg-[#00A1FF] text-white py-4 md:py-6 font-black text-xl md:text-3xl uppercase tracking-tighter shadow-[6px_6px_0px_#000] md:shadow-[10px_10px_0px_#000] hover:bg-[#FF4B4B] disabled:opacity-50"
         >
           {formState === 'sending' ? 'BEAMING...' : 'SEND SIGNAL →'}

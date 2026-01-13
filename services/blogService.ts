@@ -1,20 +1,20 @@
 import { db } from './db';
 
 export interface BlogPost {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  date: string;
-  readTime: string;
-  image: string;
-  tags: string[];
-  // Additional fields for rich content
-  category?: string;
-  color?: string;
-  sections?: any[]; // JSON structure
+    id: number;
+    slug: string;
+    title: string;
+    excerpt: string;
+    content: string;
+    author: string;
+    date: string;
+    readTime: string;
+    image: string;
+    tags: string[];
+    // Additional fields for rich content
+    category?: string;
+    color?: string;
+    sections?: any[]; // JSON structure
 }
 
 export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: string }): Promise<boolean> => {
@@ -22,19 +22,19 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
         const slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         const sectionsStr = JSON.stringify(post.sections || []);
         const tagsStr = JSON.stringify(post.tags || []);
-        
+
         await db.execute({
             sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content, author, read_time, image_url, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
-                slug, 
-                post.title, 
-                post.date || new Date().toISOString(), 
-                post.excerpt, 
-                post.category || 'General', 
-                post.color || '#000000', 
-                sectionsStr, 
+                slug,
+                post.title,
+                post.date || new Date().toISOString(),
+                post.excerpt,
+                post.category || 'General',
+                post.color || '#000000',
+                sectionsStr,
                 post.content || '',
-                post.author || 'Manishi Yadav',
+                post.author || 'Manish Yadav',
                 post.readTime || '5 min',
                 post.image || '',
                 tagsStr
@@ -63,13 +63,13 @@ export const deletePost = async (id: number): Promise<boolean> => {
 // Mock interface for now matching current blog structure, will map DB results to this
 export const getPosts = async (): Promise<BlogPost[]> => {
     try {
-        const result = await db.execute("SELECT * FROM posts ORDER BY id DESC"); 
-        
+        const result = await db.execute("SELECT * FROM posts ORDER BY id DESC");
+
         // If DB is empty or table doesn't exist, return empty or mock
         // This is a safety check for the first run before migration
         if (result.rows.length === 0) {
             console.warn("No posts found in database.");
-            return []; 
+            return [];
         }
 
         return result.rows.map(row => ({
@@ -94,7 +94,7 @@ export const getPosts = async (): Promise<BlogPost[]> => {
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
-   try {
+    try {
         const result = await db.execute({
             sql: "SELECT * FROM posts WHERE slug = ?",
             args: [slug]
@@ -116,12 +116,12 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
             tags: parseTags(row.tags),
             category: String(row.category || ''),
             color: String(row.color || ''),
-            sections: parseTags(row.sections) 
+            sections: parseTags(row.sections)
         };
-   } catch (error) {
-       console.error(`Failed to fetch post ${slug}:`, error);
-       return null;
-   }
+    } catch (error) {
+        console.error(`Failed to fetch post ${slug}:`, error);
+        return null;
+    }
 }
 
 const parseTags = (tags: any): any[] => {

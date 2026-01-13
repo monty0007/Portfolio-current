@@ -19,7 +19,7 @@ export const askPortfolioAssistant = async (question: string) => {
     Their email is monty.my1234@gmail.com.
     If people ask about Manish's work, tell them about their amazing GenAI projects with a cartoonish twist!
   `;
-    
+
     const response = await ai.models.generateContent({
       model,
       contents: [{

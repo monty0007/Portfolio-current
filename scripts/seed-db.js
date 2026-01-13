@@ -28,7 +28,7 @@ const posts = [
     sections: JSON.stringify([
       { type: 'text', content: 'Welcome to your rich-content editor! Below are examples of everything you can build using the JSON sections in the admin panel.' },
       { type: 'note', content: 'Pro-Tip: You can find the JSON templates for these blocks by clicking "VIEW BLUEPRINT MANUAL" in the Admin Lab!' },
-      { type: 'image', content: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200', caption: 'High-tech gadgets for your blog posts.' },
+      { type: 'image', content: '', caption: 'High-tech gadgets for your blog posts.' },
       { type: 'text', content: 'You can also drop code snippets that look like real 22nd-century terminals:' },
       { type: 'code', content: 'const powerUp = () => {\n  console.log("ACTION BASTION!!!");\n  return "🚀 Ready for deployment!";\n};', language: 'javascript' },
       { type: 'text', content: 'Every section is framed with neubrutalist borders to keep that premium Awwwards cartoon aesthetic.' }
@@ -44,7 +44,7 @@ const posts = [
     content: '',
     sections: JSON.stringify([
       { type: 'text', content: 'Transformers are essentially vast neural stages where attention mechanisms act as directors.' },
-      { type: 'image', content: 'https://images.unsplash.com/photo-1620712943543-bcc4628c71d0?auto=format&fit=crop&q=80&w=1200', caption: 'Neural networks visualizing patterns.' },
+      { type: 'image', content: '', caption: 'Neural networks visualizing patterns.' },
       { type: 'note', content: 'Attention is all you need, but a good cape helps too!' }
     ])
   }
@@ -54,7 +54,7 @@ async function seed() {
   try {
     console.log("Dropping existing table 'posts'...");
     await db.execute("DROP TABLE IF EXISTS posts");
-    
+
     console.log("Creating table 'posts'...");
     await db.execute(`
       CREATE TABLE IF NOT EXISTS posts (
@@ -63,7 +63,7 @@ async function seed() {
         title TEXT,
         excerpt TEXT,
         content TEXT,
-        author TEXT DEFAULT 'Manishi Yadav',
+        author TEXT DEFAULT 'Manish Yadav',
         created_at TEXT,
         read_time TEXT,
         image_url TEXT,
@@ -77,10 +77,10 @@ async function seed() {
 
     for (const post of posts) {
       console.log(`Inserting post: ${post.title}`);
-      
+
       await db.execute({
-          sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [post.id, post.title, post.date, post.excerpt, post.category, post.color, post.sections, post.content]
+        sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [post.id, post.title, post.date, post.excerpt, post.category, post.color, post.sections, post.content]
       });
     }
 

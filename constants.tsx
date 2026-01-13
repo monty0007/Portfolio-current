@@ -2,66 +2,74 @@
 import { Project, Skill, BlogPost, Achievement } from './types';
 
 export const PROJECTS: Project[] = [
+
   {
     id: '1',
-    title: 'Cartoon RAG Assistant',
-    description: 'A retrieval-augmented generation system that talks like your favorite 90s cartoon characters using LLM fine-tuning.',
-    image: 'https://images.unsplash.com/photo-1675557009875-436f595b295d?auto=format&fit=crop&q=80&w=800',
-    tags: ['Python', 'LangChain', 'OpenAI'],
-    color: '#FF4B4B'
+    title: 'Trivia Arena',
+    description: 'An interactive quiz platform where users can create and play quizzes, featuring authentication and a joyful, user-focused UI/UX.',
+    image: '/triviarena.png',
+    tags: ['React', 'Firebase', 'MongoDB', 'TailwindCSS'],
+    color: '#00A1FF',
+    link: 'https://triviarena.maoverse.xyz/',
+    disabled: false
   },
   {
     id: '2',
-    title: 'Visual Prompt Lab',
-    description: 'Interactive playground for engineering visual prompts, specifically designed for comic-style image generation.',
-    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800',
-    tags: ['Stable Diffusion', 'React', 'FastAPI'],
-    color: '#00A1FF'
+    title: 'Power Quote',
+    description: 'A live Power Apps solution for managing quotations and purchase orders, with automated Word and PDF generation.',
+    image: '/powerquote.png',
+    tags: ['Power Apps', 'Power Automate', 'SharePoint / Dataverse', 'Word Templates'],
+    color: '#FF4B4B',
+    link: 'na',
+    disabled: true
   },
   {
     id: '3',
-    title: 'Agentic Workflow Engine',
-    description: 'Autonomous AI agents that collaborate to build software, managed through a playful, high-energy UI.',
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
-    tags: ['AutoGPT', 'Docker', 'Go'],
-    color: '#6B4BFF'
+    title: 'Automify The Builder',
+    description: 'A drag-and-drop automation platform inspired by n8n, enabling users to visually design workflows through a clean interface.',
+    image: '/auto.png',
+    tags: ['React', 'Automation', 'Workflow Builder'],
+    color: '#6B4BFF',
+    link: 'https://automify.vercel.app/',
+    disabled: false
   }
 ];
 
 export const SKILLS: Skill[] = [
-  { name: 'LLM Architect', level: 95 },
-  { name: 'PyTorch / JAX', level: 90 },
-  { name: 'Prompt Eng', level: 98 },
+  { name: 'Frontend', level: 85 },
+  { name: 'Backend', level: 95 },
+  { name: 'Prompt Engineering', level: 98 },
   { name: 'Vector DBs', level: 85 },
-  { name: 'React/Frontend', level: 80 }
+  { name: 'Power Platform', level: 92 }
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
   {
     id: '1',
-    title: 'Global GenAI Hackathon Winner',
-    issuer: 'Google Cloud',
-    date: '2024',
+    title: 'Midnight Summit Hackathon – 1st Place',
+    issuer: 'Midnight Foundation (In-Person)',
+    date: '2025',
     icon: '🏆',
     color: '#FFD600'
   },
   {
     id: '2',
-    title: 'Top AI Contributor',
-    issuer: 'Open Source Community',
-    date: '2023',
-    icon: '🌟',
+    title: 'Microsoft Hackathon & Ideathon – 1st Place',
+    issuer: 'Microsoft',
+    date: '2025',
+    icon: '🥇',
     color: '#00A1FF'
   },
   {
     id: '3',
-    title: 'Neural Arts Certified',
-    issuer: 'DeepLearning.AI',
-    date: '2023',
-    icon: '🎨',
+    title: 'IIT Bombay Hackathon – 2nd Place',
+    issuer: 'Indian Institute of Technology Bombay',
+    date: '2024',
+    icon: '🥈',
     color: '#FF4B4B'
   }
 ];
+
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -74,7 +82,7 @@ export const BLOG_POSTS: BlogPost[] = [
     sections: [
       { type: 'text', content: 'Welcome to your rich-content editor! Below are examples of everything you can build using the JSON sections in the admin panel.' },
       { type: 'note', content: 'Pro-Tip: You can find the JSON templates for these blocks by clicking "VIEW BLUEPRINT MANUAL" in the Admin Lab!' },
-      { type: 'image', content: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200', caption: 'High-tech gadgets for your blog posts.' },
+      { type: 'image', content: '', caption: 'High-tech gadgets for your blog posts.' },
       { type: 'text', content: 'You can also drop code snippets that look like real 22nd-century terminals:' },
       { type: 'code', content: 'const powerUp = () => {\n  console.log("ACTION BASTION!!!");\n  return "🚀 Ready for deployment!";\n};', language: 'javascript' },
       { type: 'text', content: 'Every section is framed with neubrutalist borders to keep that premium Awwwards cartoon aesthetic.' }
@@ -89,7 +97,7 @@ export const BLOG_POSTS: BlogPost[] = [
     color: '#FF4B4B',
     sections: [
       { type: 'text', content: 'Transformers are essentially vast neural stages where attention mechanisms act as directors.' },
-      { type: 'image', content: 'https://images.unsplash.com/photo-1620712943543-bcc4628c71d0?auto=format&fit=crop&q=80&w=1200', caption: 'Neural networks visualizing patterns.' },
+      { type: 'image', content: '', caption: 'Neural networks visualizing patterns.' },
       { type: 'note', content: 'Attention is all you need, but a good cape helps too!' }
     ]
   }

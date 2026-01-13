@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 interface FooterProps {
-  onNavigate?: (view: 'home' | 'blog' | 'admin') => void;
+  onNavigate?: (view: 'home' | 'blog' | 'admin', sectionId?: string) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
@@ -19,7 +19,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
     <footer className="bg-black text-white pt-20 pb-10 px-6 relative overflow-hidden border-t-8 border-black">
       {/* Background oversized name */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12vw] font-black text-white/5 uppercase select-none pointer-events-none whitespace-nowrap">
-        Manish YADAV
+        Manish Yadav
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -43,10 +43,24 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               <h4 className="text-xs font-black uppercase mb-6 text-gray-500 tracking-[0.2em]">Sitemap</h4>
               <ul className="space-y-3 text-lg font-bold">
-                <li><a href="#about" className="hover:text-[#FFD600] transition-all">Mission</a></li>
-                <li><a href="#projects" className="hover:text-[#FFD600] transition-all">Works</a></li>
                 <li>
-                  <button 
+                  <button
+                    onClick={() => onNavigate?.('home', 'about')}
+                    className="hover:text-[#FFD600] transition-all uppercase text-left w-full"
+                  >
+                    Mission
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate?.('home', 'projects')}
+                    className="hover:text-[#FFD600] transition-all uppercase text-left w-full"
+                  >
+                    Works
+                  </button>
+                </li>
+                <li>
+                  <button
                     onClick={() => onNavigate?.('blog')}
                     className="hover:text-[#FFD600] transition-all uppercase text-left w-full"
                   >
@@ -58,10 +72,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <div>
               <h4 className="text-xs font-black uppercase mb-6 text-gray-500 tracking-[0.2em]">Socials</h4>
               <ul className="space-y-3 text-lg font-bold">
-                <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#FF4B4B]">GitHub</a></li>
-                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#00A1FF]">LinkedIn</a></li>
+                <li><a href="https://github.com/monty0007" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#FF4B4B]">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/manish-yadav-8a5667202/" target="_blank" rel="noopener noreferrer" className="hover:underline hover:decoration-[#00A1FF]">LinkedIn</a></li>
                 <li>
-                  <button 
+                  <button
                     onClick={() => onNavigate?.('admin')}
                     className="text-white/40 hover:text-[#FFD600] transition-all text-sm uppercase font-black border-b-2 border-white/20 hover:border-[#FFD600]"
                   >
@@ -77,10 +91,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="w-full h-px bg-white/20 mb-8"></div>
         <div className="overflow-hidden whitespace-nowrap mb-8 select-none">
           <div className="inline-block animate-[marquee_20s_linear_infinite] text-sm font-black uppercase tracking-[0.3em] text-gray-400">
-            LLM ARCHITECT • AGENTIC WORKFLOWS • VISUAL AI • ACTION BASTION • DORAEMON TECH • Manish YADAV •&nbsp;
+            GENAI • AGENTIC WORKFLOWS • POWER PLATFORM • REACT • PROMPT ENGINEER • BUSINESS AUTOMATION • &nbsp;
           </div>
           <div className="inline-block animate-[marquee_20s_linear_infinite] text-sm font-black uppercase tracking-[0.3em] text-gray-400">
-            LLM ARCHITECT • AGENTIC WORKFLOWS • VISUAL AI • ACTION BASTION • DORAEMON TECH • Manish YADAV •&nbsp;
+            GENAI • AGENTIC WORKFLOWS • POWER PLATFORM • REACT • PROMPT ENGINEER • BUSINESS AUTOMATION • &nbsp;
           </div>
         </div>
 
@@ -92,11 +106,11 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           <div className="flex flex-col items-center text-center">
-            <div className="text-xl font-black uppercase tracking-tight">© {new Date().getFullYear()} Manish YADAV</div>
+            <div className="text-xl font-black uppercase tracking-tight">© {new Date().getFullYear()} MEOWNTY😸</div>
             <div className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 mt-1">Built with high-frequency energy</div>
           </div>
 
-          <button 
+          <button
             onClick={scrollToTop}
             className="cartoon-btn w-14 h-14 bg-[#00A1FF] text-white flex items-center justify-center hover:bg-white hover:text-black transition-all group border-4 border-black"
           >

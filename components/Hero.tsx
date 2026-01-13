@@ -29,7 +29,7 @@ const Hero: React.FC = () => {
     { name: 'NodeJS', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg', pos: 'bottom-[15%] left-[8%]', size: 'w-24 h-24', delay: '2s', factor: 1.5 },
     { name: 'TypeScript', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg', pos: 'top-[45%] left-[2%]', size: 'w-16 h-16', delay: '1s', factor: 2.5 },
     { name: 'Power Automate', url: powerAutomateSvg, pos: 'bottom-[45%] left-[12%]', size: 'w-24 h-24', delay: '3s', factor: 1.8 },
-    
+
     // RIGHT SIDE
     { name: 'MongoDB', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg', pos: 'top-[15%] right-[8%]', size: 'w-28 h-28', delay: '1.5s', factor: -0.8 },
     { name: 'Python', url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg', pos: 'bottom-[10%] right-[12%]', size: 'w-24 h-24', delay: '3.5s', factor: -1.4 },
@@ -44,39 +44,39 @@ const Hero: React.FC = () => {
         <div
           key={i}
           className={`absolute ${tech.pos} ${tech.size} floating opacity-40 md:opacity-90 z-20 pointer-events-none transition-transform duration-300 ease-out p-1`}
-          style={{ 
+          style={{
             animationDelay: tech.delay,
             transform: `translate(${mousePos.x * tech.factor}px, ${mousePos.y * tech.factor}px)`
           }}
         >
-          <img 
-            src={tech.url} 
-            alt={tech.name} 
-            className="w-full h-full object-contain filter drop-shadow-[6px_6px_0px_rgba(0,0,0,1)]" 
+          <img
+            src={tech.url}
+            alt={tech.name}
+            className="w-full h-full object-contain filter drop-shadow-[6px_6px_0px_rgba(0,0,0,1)]"
           />
         </div>
       ))}
 
       <div className="max-w-6xl w-full text-center z-10">
         <div className="inline-block bg-[#FF4B4B] text-white px-4 md:px-6 py-2 text-sm md:text-base font-black cartoon-btn mb-4 md:mb-6 rotate-[-2deg] shadow-[4px_4px_0px_#000] cursor-default">
-          HI! I'M ManishI YADAV
+          HI! I'M Manish Yadav
         </div>
-        
+
         <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7rem] font-black leading-[0.9] mb-4 md:mb-6 uppercase tracking-tighter break-words">
           GEN AI <br className="hidden sm:block" />
-          <span 
-            className="text-[#00A1FF] hover:scale-105 transition-transform inline-block cursor-pointer px-2" 
+          <span
+            className="text-[#00A1FF] hover:scale-105 transition-transform inline-block cursor-pointer px-2"
             style={{ WebkitTextStroke: '2px black', textShadow: '4px 4px 0px #000' }}
           >
             ENGINEER
           </span>
         </h1>
-        
+
         <p className="max-w-2xl mx-auto text-base md:text-xl lg:text-2xl font-bold mb-6 md:mb-8 text-gray-800 leading-tight px-4">
-          Crafting 22nd-century AI gadgets with <br className="hidden md:block" />
-          <span className="bg-[#FFD600] border-2 border-black px-2 inline-block my-1">Action Bastion</span> energy & tech precision.
+          Crafting production-ready AI systems with <br className="hidden md:block" />
+          <span className="bg-[#FFD600] border-2 border-black px-2 inline-block my-1">Engineering Precision</span>and real-world impact.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 px-6">
           <a href="#projects" className="cartoon-btn bg-[#FFD600] text-black text-base md:text-xl font-black px-8 md:px-10 py-3 md:py-4 uppercase no-underline w-full sm:w-auto">
             View My Lab 🔬

@@ -8,7 +8,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showManual, setShowManual] = useState(false);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
 
@@ -16,7 +16,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     heading: '{ "type": "heading", "content": "BIG TITLE HERE" }',
     subheading: '{ "type": "subheading", "content": "Small section title..." }',
     paragraph: '{ "type": "paragraph", "content": "Once upon a time in the 22nd century..." }',
-    image: '{ "type": "image", "content": "https://images.unsplash.com/photo-1550745165-9bc0b252726f", "caption": "Add a caption" }',
+    image: '{ "type": "image", "content": "", "caption": "Add a caption" }',
     code: '{ "type": "code", "content": "console.log(\'Action Bastion!\');", "language": "javascript" }',
     note: '{ "type": "note", "content": "This is a secret gadget tip!" }'
   };
@@ -43,8 +43,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, []);
 
   const refreshData = async () => {
-      const posts = await getPosts();
-      setBlogs(posts);
+    const posts = await getPosts();
+    setBlogs(posts);
   };
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const smartInsert = (template: string) => {
     const current = newBlog.sectionsJSON.trim();
     let updated = '';
-    
+
     if (current === '' || current === '[]' || current === '[ ]') {
       updated = '[\n  ' + template + '\n]';
     } else if (current.endsWith(']')) {
@@ -76,7 +76,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     } else {
       updated = '[\n  ' + template + '\n]';
     }
-    
+
     setNewBlog({ ...newBlog, sectionsJSON: updated });
     setErrors({ ...errors, sectionsJSON: false });
   };
@@ -100,51 +100,51 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     try {
       const parsedSections = JSON.parse(newBlog.sectionsJSON);
-      
+
       const success = await createPost({
-          title: newBlog.title,
-          category: newBlog.category,
-          excerpt: newBlog.excerpt,
-          sections: parsedSections,
-          color: newBlog.color,
-          content: '',
-          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          image: '', // Default or parsed from sections?
-          readTime: '5 min', // Calculate?
-          tags: [],
-          author: 'Manishi Yadav'
+        title: newBlog.title,
+        category: newBlog.category,
+        excerpt: newBlog.excerpt,
+        sections: parsedSections,
+        color: newBlog.color,
+        content: '',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        image: '', // Default or parsed from sections?
+        readTime: '5 min', // Calculate?
+        tags: [],
+        author: 'Manish Yadav'
       });
 
       if (success) {
-          await refreshData();
-          setNewBlog({ 
-            title: '', 
-            category: 'Engineering', 
-            excerpt: '', 
-            sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]', 
-            color: '#FF4B4B' 
-          });
-          setErrors({});
-          showFeedback("MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
+        await refreshData();
+        setNewBlog({
+          title: '',
+          category: 'Engineering',
+          excerpt: '',
+          sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
+          color: '#FF4B4B'
+        });
+        setErrors({});
+        showFeedback("MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
       } else {
-          showFeedback("DEPLOYMENT FAILED! Check console! 🛑", "error");
+        showFeedback("DEPLOYMENT FAILED! Check console! 🛑", "error");
       }
     } catch (e) {
       setErrors({ sectionsJSON: true });
       showFeedback("JSON CRASH! Check your brackets/commas! 🤖💥", "error");
     }
   };
-  
+
   const handleDeleteBlog = async (id: number) => {
-      if(window.confirm('Delete this entry?')) {
-          const success = await deletePost(id);
-          if (success) {
-              await refreshData();
-              showFeedback("ENTRY DELETED! 🗑️");
-          } else {
-              showFeedback("DELETE FAILED! 🛑", "error");
-          }
+    if (window.confirm('Delete this entry?')) {
+      const success = await deletePost(id);
+      if (success) {
+        await refreshData();
+        showFeedback("ENTRY DELETED! 🗑️");
+      } else {
+        showFeedback("DELETE FAILED! 🛑", "error");
       }
+    }
   };
 
   const handleSaveAch = () => {
@@ -160,9 +160,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const Toast = () => (
     <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-full duration-500`}>
-      <div className={`border-4 border-black px-10 py-5 shadow-[12px_12px_0px_#000] font-black uppercase text-2xl flex items-center gap-4 ${
-        toast?.type === 'success' ? 'bg-[#FFD600] text-black' : 'bg-red-500 text-white'
-      }`}>
+      <div className={`border-4 border-black px-10 py-5 shadow-[12px_12px_0px_#000] font-black uppercase text-2xl flex items-center gap-4 ${toast?.type === 'success' ? 'bg-[#FFD600] text-black' : 'bg-red-500 text-white'
+        }`}>
         <span className="text-4xl">{toast?.type === 'success' ? '⚡' : '🔥'}</span>
         {toast?.message}
       </div>
@@ -181,7 +180,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div key={name} className="bg-black/40 p-3 border border-white/20 rounded">
               <div className="flex justify-between items-center mb-2">
                 <p className="text-yellow-400 font-black uppercase">{name} part</p>
-                <button 
+                <button
                   onClick={() => handleCopyTemplate(code)}
                   className="bg-white text-black px-3 py-1 text-[10px] font-black uppercase hover:bg-yellow-400 border-2 border-black"
                 >
@@ -199,12 +198,12 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#F0F0F0] pt-32 pb-20 px-6">
       {toast && <Toast />}
-      
+
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
           <div className="flex items-center gap-4">
-             <div className="w-16 h-16 bg-red-500 border-4 border-black rounded-full flex items-center justify-center text-3xl shadow-[4px_4px_0px_#000]">🧪</div>
-             <h1 className="text-5xl font-black uppercase tracking-tighter text-black">Admin <span className="text-red-500">Suite</span></h1>
+            <div className="w-16 h-16 bg-red-500 border-4 border-black rounded-full flex items-center justify-center text-3xl shadow-[4px_4px_0px_#000]">🧪</div>
+            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">Admin <span className="text-red-500">Suite</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={() => setTab('blogs')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'blogs' ? 'bg-[#FF4B4B] text-white' : 'bg-white text-black'}`}>Blogs</button>
@@ -227,36 +226,36 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="space-y-6">
                   <div>
                     <label className="font-black uppercase text-xs mb-1 block">Blog Title {errors.title && <span className="text-red-500 ml-2">REQUIRED!</span>}</label>
-                    <input type="text" placeholder="Title..." value={newBlog.title} onChange={e => {setNewBlog({...newBlog, title: e.target.value}); setErrors({...errors, title: false})}} className={`w-full p-4 border-4 border-black font-bold text-black ${errors.title ? 'bg-red-50 border-red-500' : ''}`} />
+                    <input type="text" placeholder="Title..." value={newBlog.title} onChange={e => { setNewBlog({ ...newBlog, title: e.target.value }); setErrors({ ...errors, title: false }) }} className={`w-full p-4 border-4 border-black font-bold text-black ${errors.title ? 'bg-red-50 border-red-500' : ''}`} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <input type="text" placeholder="Category" value={newBlog.category} onChange={e => setNewBlog({...newBlog, category: e.target.value})} className="p-4 border-4 border-black font-bold text-black" />
-                    <select value={newBlog.color} onChange={e => setNewBlog({...newBlog, color: e.target.value})} className="p-4 border-4 border-black font-bold text-black">
-                       <option value="#FF4B4B">Red Alert</option>
-                       <option value="#00A1FF">Sonic Blue</option>
-                       <option value="#FFD600">Golden Yellow</option>
+                    <input type="text" placeholder="Category" value={newBlog.category} onChange={e => setNewBlog({ ...newBlog, category: e.target.value })} className="p-4 border-4 border-black font-bold text-black" />
+                    <select value={newBlog.color} onChange={e => setNewBlog({ ...newBlog, color: e.target.value })} className="p-4 border-4 border-black font-bold text-black">
+                      <option value="#FF4B4B">Red Alert</option>
+                      <option value="#00A1FF">Sonic Blue</option>
+                      <option value="#FFD600">Golden Yellow</option>
                     </select>
                   </div>
 
-                  <textarea placeholder="Quick Excerpt..." value={newBlog.excerpt} onChange={e => setNewBlog({...newBlog, excerpt: e.target.value})} className="w-full p-4 border-4 border-black font-bold h-20 text-black" />
-                  
+                  <textarea placeholder="Quick Excerpt..." value={newBlog.excerpt} onChange={e => setNewBlog({ ...newBlog, excerpt: e.target.value })} className="w-full p-4 border-4 border-black font-bold h-20 text-black" />
+
                   <div className={`p-4 bg-gray-50 border-4 border-black ${errors.sectionsJSON ? 'border-red-500' : ''}`}>
                     <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-                       <p className="text-xs font-black uppercase text-black">The Assembly Board</p>
-                       <div className="flex flex-wrap gap-2">
-                          <button onClick={() => smartInsert(TEMPLATES.heading)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
-                          <button onClick={() => smartInsert(TEMPLATES.subheading)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
-                          <button onClick={() => smartInsert(TEMPLATES.paragraph)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
-                          <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ IMAGE</button>
-                          <button onClick={() => smartInsert(TEMPLATES.code)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
-                          <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
-                       </div>
+                      <p className="text-xs font-black uppercase text-black">The Assembly Board</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => smartInsert(TEMPLATES.heading)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
+                        <button onClick={() => smartInsert(TEMPLATES.subheading)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
+                        <button onClick={() => smartInsert(TEMPLATES.paragraph)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
+                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ IMAGE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.code)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
+                        <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
+                      </div>
                     </div>
-                    <textarea 
-                      value={newBlog.sectionsJSON} 
-                      onChange={e => {setNewBlog({...newBlog, sectionsJSON: e.target.value}); setErrors({...errors, sectionsJSON: false})}} 
-                      className="w-full p-4 border-2 border-black font-mono text-sm h-72 text-black bg-white" 
+                    <textarea
+                      value={newBlog.sectionsJSON}
+                      onChange={e => { setNewBlog({ ...newBlog, sectionsJSON: e.target.value }); setErrors({ ...errors, sectionsJSON: false }) }}
+                      className="w-full p-4 border-2 border-black font-mono text-sm h-72 text-black bg-white"
                     />
                   </div>
 
@@ -283,12 +282,12 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
                 <h2 className="text-2xl font-black uppercase mb-6">Badge Forge</h2>
                 <div className="space-y-4">
-                  <input type="text" placeholder="Title..." value={newAch.title} onChange={e => setNewAch({...newAch, title: e.target.value})} className="w-full p-4 border-4 border-black font-bold" />
-                  <input type="text" placeholder="Issuer..." value={newAch.issuer} onChange={e => setNewAch({...newAch, issuer: e.target.value})} className="w-full p-4 border-4 border-black font-bold" />
+                  <input type="text" placeholder="Title..." value={newAch.title} onChange={e => setNewAch({ ...newAch, title: e.target.value })} className="w-full p-4 border-4 border-black font-bold" />
+                  <input type="text" placeholder="Issuer..." value={newAch.issuer} onChange={e => setNewAch({ ...newAch, issuer: e.target.value })} className="w-full p-4 border-4 border-black font-bold" />
                   <div className="grid grid-cols-3 gap-4">
-                    <input type="text" placeholder="Year" value={newAch.date} onChange={e => setNewAch({...newAch, date: e.target.value})} className="p-4 border-4 border-black font-bold" />
-                    <input type="text" placeholder="Emoji" value={newAch.icon} onChange={e => setNewAch({...newAch, icon: e.target.value})} className="p-4 border-4 border-black font-bold" />
-                    <select value={newAch.color} onChange={e => setNewAch({...newAch, color: e.target.value})} className="p-4 border-4 border-black font-bold">
+                    <input type="text" placeholder="Year" value={newAch.date} onChange={e => setNewAch({ ...newAch, date: e.target.value })} className="p-4 border-4 border-black font-bold" />
+                    <input type="text" placeholder="Emoji" value={newAch.icon} onChange={e => setNewAch({ ...newAch, icon: e.target.value })} className="p-4 border-4 border-black font-bold" />
+                    <select value={newAch.color} onChange={e => setNewAch({ ...newAch, color: e.target.value })} className="p-4 border-4 border-black font-bold">
                       <option value="#FFD600">Yellow</option>
                       <option value="#00A1FF">Blue</option>
                       <option value="#FF4B4B">Red</option>
@@ -315,7 +314,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
       </div>
-      
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #eee; border: 2px solid #000; }

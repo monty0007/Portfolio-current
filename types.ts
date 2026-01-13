@@ -24,6 +24,8 @@ export interface Project {
   image: string;
   tags: string[];
   color: string;
+  link: string;
+  disabled: boolean;
 }
 
 export interface Skill {
