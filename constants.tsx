@@ -36,11 +36,11 @@ export const PROJECTS: Project[] = [
 ];
 
 export const SKILLS: Skill[] = [
-  { name: 'Frontend', level: 85 },
+  { name: 'Power Platform', level: 92 },
   { name: 'Backend', level: 95 },
-  { name: 'Prompt Engineering', level: 98 },
-  { name: 'Vector DBs', level: 85 },
-  { name: 'Power Platform', level: 92 }
+  { name: 'Prompt Engineering', level: 83 },
+  { name: 'Automation', level: 93 },
+  { name: 'Frontend', level: 80 }
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
