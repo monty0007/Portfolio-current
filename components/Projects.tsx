@@ -111,17 +111,33 @@ const Projects: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (!sectionRef.current) return;
-      const rect = sectionRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const totalDist = rect.height - windowHeight;
-      const progress = Math.min(Math.max(-rect.top / totalDist, 0), 1);
-      setScrollProgress(progress);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (!sectionRef.current) return;
+          const rect = sectionRef.current.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          const totalDist = rect.height - windowHeight;
+          const progress = Math.min(Math.max(-rect.top / totalDist, 0), 1);
+          setScrollProgress(progress);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Detect mobile to disable heavy 3D transforms completely
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   let pinProgress = 0;
@@ -147,6 +163,7 @@ const Projects: React.FC = () => {
       id="projects"
       className="relative h-[450vh] bg-[#FFF9E6] border-y-8 border-black"
     >
+
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none  top-0 h-screen"
         style={{
           backgroundImage: `linear-gradient(#000 2px, transparent 2px), linear-gradient(90deg, #000 2px, transparent 2px)`,
@@ -177,7 +194,7 @@ const Projects: React.FC = () => {
         </div>
 
         <div
-          className="flex items-center h-full transition-all duration-75 ease-out"
+          className="flex items-center h-full transition-transform duration-75 ease-out will-change-transform" // Changed transition-all to transition-transform
           style={{
             transform: `translateX(${currentTranslate}vw)`,
             opacity: Math.min(pinProgress * 3, 1),

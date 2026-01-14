@@ -1,12 +1,12 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 export const askPortfolioAssistant = async (question: string) => {
   if (!apiKey) {
     console.warn("Gemini API Key is missing!");
-    return "Action Bastion! 🤖 My brain chip is missing! (Please add GEMINI_API_KEY to .env)";
+    return "Action Bastion! 🤖 My brain chip is missing! (Please add VITE_GEMINI_API_KEY to .env)";
   }
 
   try {

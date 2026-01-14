@@ -11,6 +11,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+  const [imageMap, setImageMap] = useState<{ [key: string]: string }>({});
 
   const TEMPLATES = {
     heading: '{ "type": "heading", "content": "BIG TITLE HERE" }',
@@ -26,7 +27,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     category: 'Engineering',
     excerpt: '',
     sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
-    color: '#FF4B4B'
+    color: '#FF4B4B',
+    image: ''
   });
 
   const [newAch, setNewAch] = useState({
@@ -99,7 +101,18 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     try {
-      const parsedSections = JSON.parse(newBlog.sectionsJSON);
+      let parsedSections = JSON.parse(newBlog.sectionsJSON);
+
+      // Resolve Image Tokens
+      parsedSections = parsedSections.map((section: any) => {
+        if (section.type === 'image' && section.content && section.content.startsWith('{{IMG_') && section.content.endsWith('}}')) {
+          const token = section.content.slice(2, -2);
+          if (imageMap[token]) {
+            return { ...section, content: imageMap[token] };
+          }
+        }
+        return section;
+      });
 
       const success = await createPost({
         title: newBlog.title,
@@ -109,7 +122,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         color: newBlog.color,
         content: '',
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        image: '', // Default or parsed from sections?
+        image: newBlog.image, // Use uploaded image
         readTime: '5 min', // Calculate?
         tags: [],
         author: 'Manish Yadav'
@@ -122,8 +135,10 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           category: 'Engineering',
           excerpt: '',
           sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
-          color: '#FF4B4B'
+          color: '#FF4B4B',
+          image: ''
         });
+        setImageMap({});
         setErrors({});
         showFeedback("MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
       } else {
@@ -225,6 +240,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <h2 className="text-2xl font-black uppercase mb-6 text-black">New Blog Forge</h2>
                 <div className="space-y-6">
                   <div>
+                  </div>
+                  <div>
                     <label className="font-black uppercase text-xs mb-1 block">Blog Title {errors.title && <span className="text-red-500 ml-2">REQUIRED!</span>}</label>
                     <input type="text" placeholder="Title..." value={newBlog.title} onChange={e => { setNewBlog({ ...newBlog, title: e.target.value }); setErrors({ ...errors, title: false }) }} className={`w-full p-4 border-4 border-black font-bold text-black ${errors.title ? 'bg-red-50 border-red-500' : ''}`} />
                   </div>
@@ -247,7 +264,37 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <button onClick={() => smartInsert(TEMPLATES.heading)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
                         <button onClick={() => smartInsert(TEMPLATES.subheading)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
                         <button onClick={() => smartInsert(TEMPLATES.paragraph)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
-                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ IMAGE</button>
+
+                        {/* Image Uploader for Sections */}
+                        <label className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black cursor-pointer hover:bg-blue-400">
+                          + IMG FILE
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 800 * 1024) {
+                                showFeedback("FILE TOO BIG! Max 800KB! 🛑", "error");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                if (typeof reader.result === 'string') {
+                                  const imgId = `IMG_${Date.now()}`;
+                                  setImageMap(prev => ({ ...prev, [imgId]: reader.result as string }));
+                                  smartInsert(`{ "type": "image", "content": "{{${imgId}}}", "caption": "Uploaded Image" }`);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                              // Reset value so same file can be selected again
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+
+                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black opacity-50">+ IMG URL</button>
                         <button onClick={() => smartInsert(TEMPLATES.code)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
                         <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
                       </div>
