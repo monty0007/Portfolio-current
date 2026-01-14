@@ -28,7 +28,7 @@ const AppContent: React.FC = () => {
     }
 
     if (newView === 'blog') {
-      navigate('/blog');
+      navigate('/blog', { state: { reset: Date.now() } });
       return;
     }
 

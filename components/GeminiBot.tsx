@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { askPortfolioAssistant } from '../services/gemini';
 
 const GeminiBot: React.FC = () => {
@@ -9,10 +9,19 @@ const GeminiBot: React.FC = () => {
     { role: 'bot', text: 'Buriburi! Ask me anything about this awesome portfolio! 🐷✨' }
   ]);
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chat, loading, isOpen]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-    
+
     const userMsg = input;
     setInput('');
     setChat(prev => [...prev, { role: 'user', text: userMsg }]);
@@ -21,6 +30,10 @@ const GeminiBot: React.FC = () => {
     const response = await askPortfolioAssistant(userMsg);
     setChat(prev => [...prev, { role: 'bot', text: response || 'Uh oh, gadget failed!' }]);
     setLoading(false);
+  };
+
+  const handleClear = () => {
+    setChat([{ role: 'bot', text: 'Buriburi! Chat cleared! Ready for new questions! 🐷' }]);
   };
 
   return (
@@ -32,15 +45,17 @@ const GeminiBot: React.FC = () => {
               <span className="w-4 h-4 bg-red-500 rounded-full border-2 border-black"></span>
               POCKET ASSISTANT
             </h3>
-            <button onClick={() => setIsOpen(false)} className="font-black text-2xl leading-none">×</button>
+            <div className="flex gap-2">
+              <button onClick={handleClear} className="font-bold text-xs bg-black text-white px-2 py-1 hover:bg-red-500 uppercase">Clear</button>
+              <button onClick={() => setIsOpen(false)} className="font-black text-2xl leading-none">×</button>
+            </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-yellow-50">
+
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4 bg-yellow-50">
             {chat.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 border-2 border-black shadow-[4px_4px_0px_#000] font-medium ${
-                  msg.role === 'user' ? 'bg-[#00A1FF] text-white' : 'bg-white text-black'
-                }`}>
+                <div className={`max-w-[80%] p-3 border-2 border-black shadow-[4px_4px_0px_#000] font-medium ${msg.role === 'user' ? 'bg-[#00A1FF] text-white' : 'bg-white text-black'
+                  }`}>
                   {msg.text}
                 </div>
               </div>
@@ -50,10 +65,11 @@ const GeminiBot: React.FC = () => {
                 <div className="bg-white border-2 border-black p-3 animate-pulse">Thinking... 🧠</div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-4 border-t-4 border-black flex gap-2">
-            <input 
+            <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -66,9 +82,9 @@ const GeminiBot: React.FC = () => {
           </div>
         </div>
       ) : (
-        <button 
+        <button
           onClick={() => setIsOpen(true)}
-          className="w-20 h-20 bg-[#FFD600] cartoon-border-hover transition-all cartoon-border rounded-full flex items-center justify-center overflow-hidden"
+          className="w-20 h-20 bg-[#FFD600] border-4 border-black cartoon-border-hover transition-all cartoon-border rounded-full flex items-center justify-center overflow-hidden"
         >
           <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=ShinchanAssistant" className="w-14 h-14" alt="Bot" />
         </button>

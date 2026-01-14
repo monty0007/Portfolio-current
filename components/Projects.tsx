@@ -40,17 +40,17 @@ const ProjectCard: React.FC<{ project: typeof PROJECTS[0]; index: number }> = ({
             SCHEMA_DATA_{index + 1}
           </div>
 
-          <div className="absolute inset-0 bg-white border-[4px] md:border-[10px] border-black shadow-[10px_10px_0px_#000] md:shadow-[15px_15px_0px_#000] overflow-hidden group-hover/img:shadow-[5px_5px_0px_#000] transition-all">
+          <div className="absolute inset-0 bg-white border-[4px] md:border-[10px] border-black shadow-[10px_10px_0px_#000] md:shadow-[15px_15px_0px_#000] overflow-hidden lg:group-hover/img:shadow-[5px_5px_0px_#000] transition-all">
             <img
               src={project.image}
               alt={project.title}
-              className="w-full h-full object-cover grayscale group-hover/img:grayscale-0 transition-all duration-700 scale-105 group-hover/img:scale-100"
+              className="w-full h-full object-cover grayscale-0 lg:grayscale lg:group-hover/img:grayscale-0 transition-all duration-700 scale-100 lg:scale-105 lg:group-hover/img:scale-100"
             />
             <div className="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px]"></div>
           </div>
         </div>
 
-        <div className="w-full md:w-[45%] bg-white border-[4px] md:border-[6px] border-black p-6 md:p-12 shadow-[10px_10px_0px_#00A1FF] md:shadow-[15px_15px_0px_#00A1FF] z-40 md:-ml-20 transform -rotate-1 group-hover:rotate-0 transition-all">
+        <div className="w-full md:w-[45%] bg-white border-[4px] md:border-[6px] border-black p-6 md:p-12 shadow-[10px_10px_0px_#00A1FF] md:shadow-[15px_15px_0px_#00A1FF] z-40 md:-ml-20 transform -rotate-1 lg:group-hover:rotate-0 transition-all">
           <h3 className="text-3xl md:text-7xl font-black uppercase leading-[0.85] mb-4 md:mb-6 tracking-tighter text-black">
             {project.title}
           </h3>

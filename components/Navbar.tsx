@@ -73,8 +73,8 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             Works
           </a>
           <button
-            onClick={() => navigate('/blog')}
-            className={`hover:text-green-500 transition-colors uppercase font-black ${currentView === 'blog' ? 'text-green-500 underline decoration-4' : 'text-black'}`}
+            onClick={() => onNavigate('blog')}
+            className={`cursor-pointer hover:text-green-500 transition-colors uppercase font-black ${currentView === 'blog' ? 'text-green-500 underline decoration-4' : 'text-black'}`}
           >
             Blog
           </button>

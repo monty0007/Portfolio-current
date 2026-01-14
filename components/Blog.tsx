@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getPosts, BlogPost } from '../services/blogService';
 import { BlogSection } from '../types';
 
@@ -8,15 +8,15 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
   switch (section.type) {
     case 'heading':
       return <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mt-12 mb-6 text-black leading-none">{section.content}</h2>;
-    
+
     case 'subheading':
       return <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter mt-10 mb-4 text-[#FF4B4B]">{section.content}</h3>;
-    
+
     case 'paragraph':
     case 'text':
     case 'markdown':
       return <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed mb-8">{section.content}</p>;
-    
+
     case 'image':
       return (
         <div className="my-12">
@@ -64,14 +64,23 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
 
 const Blog: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+
+  // Reset view when receiving reset signal from Navbar
+  useEffect(() => {
+    if (location.state?.reset) {
+      setSelectedPost(null);
+      window.scrollTo(0, 0);
+    }
+  }, [location.state]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
     const fetchBlogs = async () => {
-        const posts = await getPosts();
-        setBlogs(posts);
+      const posts = await getPosts();
+      setBlogs(posts);
     };
     fetchBlogs();
   }, []);
@@ -96,13 +105,13 @@ const Blog: React.FC = () => {
     return (
       <div className="min-h-screen bg-white pt-48 pb-20 px-6 animate-in slide-in-from-bottom duration-500">
         <div className="max-w-4xl mx-auto">
-          <button 
+          <button
             onClick={() => setSelectedPost(null)}
             className="cartoon-btn bg-black text-white px-6 py-3 font-black mb-12 uppercase text-xl"
           >
             ← BACK TO LOGS
           </button>
-          
+
           <div className="mb-16">
             <span className="px-6 py-2 bg-[#FF4B4B] text-white border-4 border-black font-black uppercase text-lg shadow-[6px_6px_0px_#000] inline-block -rotate-2">
               {(selectedPost as any).category || 'Blog'}
@@ -124,13 +133,13 @@ const Blog: React.FC = () => {
             ) : (
               <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed mb-8">{selectedPost.content}</p>
             )}
-            
+
             <div className="pt-20 mt-20 border-t-8 border-black text-center">
               <div className="text-8xl mb-4">🏮</div>
               <p className="font-black uppercase text-2xl tracking-tighter italic text-black">
                 Transmission Terminated.
               </p>
-              <button 
+              <button
                 onClick={() => {
                   setSelectedPost(null);
                   window.scrollTo(0, 0);
@@ -151,7 +160,7 @@ const Blog: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
           <header>
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="cartoon-btn bg-white text-black px-6 py-2 font-black mb-8 uppercase"
             >
@@ -161,11 +170,11 @@ const Blog: React.FC = () => {
               GOSSIP <br /> <span className="text-[#FF4B4B]" style={{ WebkitTextStroke: '2px black' }}>LOGS</span>
             </h1>
           </header>
-          
+
           <div className="w-full md:w-96">
             <label className="block font-black uppercase text-xs mb-2 text-black">Search Gadgets & Intel</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Filter by title or tag..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -176,12 +185,12 @@ const Blog: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {filteredBlogs.length > 0 ? filteredBlogs.map((post) => (
-            <div 
+            <div
               key={post.id}
               onClick={() => setSelectedPost(post)}
               className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all cursor-pointer group h-full"
             >
-              <div 
+              <div
                 className="w-full h-12 mb-6 border-b-4 border-black font-black uppercase flex items-center justify-between"
                 style={{ color: (post as any).color || '#000' }}
               >

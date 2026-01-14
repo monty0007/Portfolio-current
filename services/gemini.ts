@@ -1,29 +1,40 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+// ⚠️ SECURITY: Ideally use process.env.GEMINI_API_KEY
+// The new SDK automatically looks for 'GEMINI_API_KEY' in .env if you leave the config empty!
+const apiKey = "AIzaSyCur1pWYmEN9jgG3axM5BSrDzMrBw8ERnw";
+
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export async function askPortfolioAssistant(question: string) {
   if (!apiKey) return "❌ Missing API key";
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-pro",
-    });
-
     const systemInstruction = `
-      You are the AI assistant for Manish Yadav, a brilliant GenAI Engineer.
-      Your tone is extremely playful, energetic, and helpful. Use lots of emojis and cartoon references like Shinchan and Doraemon.
+      You are the AI assistant for Manish Yadav (Monty), a brilliant GenAI Engineer.
+      Your tone is extremely playful, energetic, and helpful. Use emojis and cartoon references (Shinchan/Doraemon).
       Manish specializes in LLMs, Agentic Workflows, and Visual AI.
-      Their email is monty.my1234@gmail.com.
-      If people ask about Manish's work, tell them about their amazing GenAI projects with a cartoonish twist!
+      His email is monty.my1234@gmail.com.
+      
+      CRITICAL RULE FOR SMALL SCREENS:
+      - Keep every answer under 30 words.
+      - Use maximum 1 or 2 short sentences.
+      - Be punchy and cute!
     `;
 
-    const result = await model.generateContent(`${systemInstruction}\n\nUser: ${question}`);
-    return result.response.text();
+    // The new SDK syntax is cleaner:
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash", // Or 'gemini-1.5-flash' (2.0 is faster if available)
+      config: {
+        systemInstruction: systemInstruction,
+      },
+      contents: question, // You can just pass the string directly now!
+    });
+
+    return response.text; // Note: it is .text (property), not .text() (function)
+
   } catch (err: any) {
     console.error("Gemini Error:", err);
-    return `Action Bastion! 🤖💥 Verification Failed: ${err.message || 'Unknown Error'} (Check terminal)`;
+    return `Action Bastion! 🤖💥 Error: ${err.message}`;
   }
 }

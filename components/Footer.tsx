@@ -77,7 +77,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <li>
                   <button
                     onClick={() => onNavigate?.('admin')}
-                    className="text-white/40 hover:text-[#FFD600] transition-all text-sm uppercase font-black border-b-2 border-white/20 hover:border-[#FFD600]"
+                    className="lg:hidden text-white/40 hover:text-[#FFD600] transition-all text-sm uppercase font-black border-b-2 border-white/20 hover:border-[#FFD600]"
                   >
                     Admin Access
                   </button>
