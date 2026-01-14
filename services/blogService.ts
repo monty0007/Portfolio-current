@@ -1,4 +1,4 @@
-import { db } from './db';
+import { db, isMock } from './db';
 
 export interface BlogPost {
     id: number;
@@ -17,9 +17,20 @@ export interface BlogPost {
     sections?: any[]; // JSON structure
 }
 
-export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: string }): Promise<boolean> => {
+export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: string }): Promise<{ success: boolean; message: string }> => {
+    if (isMock) {
+        return { success: false, message: "DB not connected! Add VITE_TURSO_DATABASE_URL to .env" };
+    }
+
     try {
-        const slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        // Generate base slug from title
+        let slug = post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+        // Append random suffix to ensure uniqueness (simple fix for now)
+        if (!post.slug) {
+            slug = `${slug}-${Date.now().toString().slice(-6)}`;
+        }
+
         const sectionsStr = JSON.stringify(post.sections || []);
         const tagsStr = JSON.stringify(post.tags || []);
 
@@ -40,10 +51,10 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
                 tagsStr
             ]
         });
-        return true;
-    } catch (error) {
+        return { success: true, message: "Post created successfully!" };
+    } catch (error: any) {
         console.error("Failed to create post:", error);
-        return false;
+        return { success: false, message: error.message || "Failed to create post (SQL Error)" };
     }
 };
 

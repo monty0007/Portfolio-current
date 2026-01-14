@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getPosts, createPost, deletePost, BlogPost } from '../services/blogService';
 import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService'; // Keep achievements mock for now or move it too? Assuming user only asked about blog.
 import { Achievement } from '../types';
@@ -10,6 +11,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showWipeModal, setShowWipeModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [imageMap, setImageMap] = useState<{ [key: string]: string }>({});
 
@@ -84,9 +88,13 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const clearEditor = () => {
-    if (window.confirm("Wipe the laboratory board?")) {
-      setNewBlog({ ...newBlog, sectionsJSON: '[\n  \n]' });
-    }
+    setShowWipeModal(true);
+  };
+
+  const confirmWipe = () => {
+    setNewBlog({ ...newBlog, sectionsJSON: '[\n  \n]' });
+    setShowWipeModal(false);
+    showFeedback("Board Wiped Clean! 🧼");
   };
 
   const handleSaveBlog = async () => {
@@ -114,7 +122,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         return section;
       });
 
-      const success = await createPost({
+      const result = await createPost({
         title: newBlog.title,
         category: newBlog.category,
         excerpt: newBlog.excerpt,
@@ -128,7 +136,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         author: 'Manish Yadav'
       });
 
-      if (success) {
+      if (result.success) {
         await refreshData();
         setNewBlog({
           title: '',
@@ -142,7 +150,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setErrors({});
         showFeedback("MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
       } else {
-        showFeedback("DEPLOYMENT FAILED! Check console! 🛑", "error");
+        showFeedback(`DEPLOYMENT FAILED! ${result.message} 🛑`, "error");
       }
     } catch (e) {
       setErrors({ sectionsJSON: true });
@@ -150,16 +158,23 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   };
 
-  const handleDeleteBlog = async (id: number) => {
-    if (window.confirm('Delete this entry?')) {
-      const success = await deletePost(id);
-      if (success) {
-        await refreshData();
-        showFeedback("ENTRY DELETED! 🗑️");
-      } else {
-        showFeedback("DELETE FAILED! 🛑", "error");
-      }
+  const handleDeleteBlog = (id: number) => {
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+
+    const success = await deletePost(deleteTargetId);
+    if (success) {
+      await refreshData();
+      showFeedback("ENTRY DELETED! 🗑️");
+    } else {
+      showFeedback("DELETE FAILED! 🛑", "error");
     }
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
   };
 
   const handleSaveAch = () => {
@@ -173,14 +188,65 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     showFeedback("NEW BADGE FORGED! 🏆✨");
   };
 
-  const Toast = () => (
-    <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-full duration-500`}>
+  const Toast = () => createPortal(
+    <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] animate-in slide-in-from-top-full duration-500`}>
       <div className={`border-4 border-black px-10 py-5 shadow-[12px_12px_0px_#000] font-black uppercase text-2xl flex items-center gap-4 ${toast?.type === 'success' ? 'bg-[#FFD600] text-black' : 'bg-red-500 text-white'
         }`}>
         <span className="text-4xl">{toast?.type === 'success' ? '⚡' : '🔥'}</span>
         {toast?.message}
       </div>
-    </div>
+    </div>,
+    document.body
+  );
+
+  const DeleteConfirmationModal = () => createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border-[6px] border-black p-8 shadow-[16px_16px_0px_#000] max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+        <div className="text-6xl mb-4">🗑️</div>
+        <h3 className="text-2xl font-black uppercase mb-2">Delete this Entry?</h3>
+        <p className="font-bold text-gray-600 mb-8">This action cannot be undone. Theoretically.</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => setShowDeleteModal(false)}
+            className="flex-1 bg-white text-black border-4 border-black py-3 font-black uppercase hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDelete}
+            className="flex-1 bg-red-500 text-white border-4 border-black py-3 font-black uppercase hover:bg-red-600 shadow-[4px_4px_0px_#000]"
+          >
+            Delete!
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
+  const WipeConfirmationModal = () => createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border-[6px] border-black p-8 shadow-[16px_16px_0px_#000] max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+        <div className="text-6xl mb-4">☢️</div>
+        <h3 className="text-2xl font-black uppercase mb-2">Detailed Wipe?</h3>
+        <p className="font-bold text-gray-600 mb-8">This will destroy all your current work on the board!</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => setShowWipeModal(false)}
+            className="flex-1 bg-white text-black border-4 border-black py-3 font-black uppercase hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmWipe}
+            className="flex-1 bg-[#FFD600] text-black border-4 border-black py-3 font-black uppercase hover:bg-yellow-400 shadow-[4px_4px_0px_#000]"
+          >
+            Wipe It!
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 
   const BlueprintManual = () => (
@@ -213,6 +279,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#F0F0F0] pt-32 pb-20 px-6">
       {toast && <Toast />}
+      {showDeleteModal && <DeleteConfirmationModal />}
+      {showWipeModal && <WipeConfirmationModal />}
 
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">

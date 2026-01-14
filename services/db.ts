@@ -13,12 +13,15 @@ const createDbClient = () => {
             }
         };
     }
-    
+
     return createClient({
         url,
         authToken,
     });
 };
+
+// Export status for checking connection
+export const isMock = !url || (!url.startsWith('libsql:') && !url.startsWith('https:') && !url.startsWith('http:') && !url.startsWith('wss:') && !url.startsWith('ws:'));
 
 export const db = createDbClient();
 
