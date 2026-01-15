@@ -16,6 +16,19 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+
+      // Hide navbar if inside #projects section
+      const projectsSection = document.getElementById('projects');
+      if (projectsSection) {
+        const rect = projectsSection.getBoundingClientRect();
+        const isInsideProjects = rect.top < window.innerHeight * 0.3 && rect.bottom > window.innerHeight * 0.3;
+        if (isInsideProjects) {
+          setIsVisible(false);
+          setLastScrollY(currentScrollY);
+          return;
+        }
+      }
+
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
       } else {

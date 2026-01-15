@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { askPortfolioAssistant } from '../services/gemini';
 
@@ -9,6 +8,7 @@ const GeminiBot: React.FC = () => {
     { role: 'bot', text: 'Buriburi! Ask me anything about this awesome portfolio! 🐷✨' }
   ]);
   const [loading, setLoading] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -18,6 +18,24 @@ const GeminiBot: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [chat, loading, isOpen]);
+
+  // Hide bot when inside #projects section
+  useEffect(() => {
+    const handleScroll = () => {
+      const projectsSection = document.getElementById('projects');
+      if (projectsSection) {
+        const rect = projectsSection.getBoundingClientRect();
+        const isInsideProjects = rect.top < window.innerHeight * 0.5 && rect.bottom > window.innerHeight * 0.5;
+        setIsHidden(isInsideProjects);
+      } else {
+        setIsHidden(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Check on mount
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -36,10 +54,12 @@ const GeminiBot: React.FC = () => {
     setChat([{ role: 'bot', text: 'Buriburi! Chat cleared! Ready for new questions! 🐷' }]);
   };
 
+  if (isHidden && !isOpen) return null;
+
   return (
-    <div className="fixed bottom-6 right-6 z-[100]">
+    <div className={`fixed bottom-6 right-6 z-[100] transition-opacity duration-300 ${isHidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       {isOpen ? (
-        <div className="w-[350px] max-w-[90vw] bg-white cartoon-border h-[450px] flex flex-col mb-4 overflow-hidden">
+        <div className="w-[350px] max-w-[90vw] bg-white border-4 border-black shadow-[8px_8px_0px_#000] h-[450px] flex flex-col mb-4 overflow-hidden">
           <div className="bg-[#FFD600] p-4 border-b-4 border-black flex justify-between items-center">
             <h3 className="font-black uppercase tracking-wider flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-full border-2 border-black"></span>
@@ -47,7 +67,7 @@ const GeminiBot: React.FC = () => {
             </h3>
             <div className="flex gap-2">
               <button onClick={handleClear} className="font-bold text-xs bg-black text-white px-2 py-1 hover:bg-red-500 uppercase">Clear</button>
-              <button onClick={() => setIsOpen(false)} className="font-black text-2xl leading-none">×</button>
+              <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white font-black border-2 border-black hover:bg-black hover:scale-90 transition-all shadow-[2px_2px_0px_#000]">×</button>
             </div>
           </div>
 

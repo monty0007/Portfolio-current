@@ -23,14 +23,12 @@ const ProjectCard: React.FC<{ project: typeof PROJECTS[0]; index: number }> = ({
     <div
       onMouseMove={handleMouseMove}
       className="flex-shrink-0 w-[90vw] h-[75vh] md:h-[80vh] flex items-center justify-center px-4 md:px-12 relative group"
-      style={{ perspective: '2000px' }}
     >
       <div
-        className="relative w-full h-full transition-transform duration-300 ease-out flex flex-col md:flex-row items-center gap-8 md:gap-0"
+        className="relative w-full h-full flex flex-col md:flex-row items-center gap-8 md:gap-0"
         style={{
-          transform: `rotateX(${mousePos.y * -3}deg) rotateY(${mousePos.x * 5}deg)`
-        }}
-      >
+          transform: window.innerWidth >= 1024 ? `rotateX(${mousePos.y * -3}deg) rotateY(${mousePos.x * 5}deg)` : 'none'
+        }}>
         <div className="absolute -top-10 left-0 text-[12rem] md:text-[25rem] font-black text-black opacity-[0.03] select-none pointer-events-none leading-none z-0">
           0{index + 1}
         </div>
@@ -194,7 +192,7 @@ const Projects: React.FC = () => {
         </div>
 
         <div
-          className="flex items-center h-full transition-transform duration-75 ease-out will-change-transform" // Changed transition-all to transition-transform
+          className="flex items-center h-full"
           style={{
             transform: `translateX(${currentTranslate}vw)`,
             opacity: Math.min(pinProgress * 3, 1),
