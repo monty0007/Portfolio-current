@@ -114,8 +114,8 @@ const Skills: React.FC = () => {
           <div className="absolute top-2 left-2 text-[10px] font-black uppercase bg-black text-white px-2">Live_Telemetry</div>
           <div className="absolute bottom-2 right-2 text-[10px] font-black uppercase text-gray-400">Arch_v2.5</div>
 
-          <div className="w-full h-full pointer-events-none lg:pointer-events-auto">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full h-full pointer-events-none lg:pointer-events-auto" style={{ minHeight: '300px' }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
                 <PolarGrid stroke="#000" strokeWidth={1} strokeDasharray="3 3" />
                 <PolarAngleAxis
