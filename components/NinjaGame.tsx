@@ -344,7 +344,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
     const setKey = (k: string, v: boolean) => (keys.current[k] = v);
 
     return (
-        <div className="w-full h-full relative overflow-hidden">
+        <div className="w-full h-full relative overflow-hidden select-none" style={{ touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
             {/* Sky */}
             <div className="absolute inset-0 bg-gradient-to-b from-sky-400 via-sky-300 to-emerald-200"></div>
 
@@ -440,7 +440,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
 
             {/* Ready Screen */}
             {gameState === 'READY' && (
-                <div className="absolute inset-0 z-[150] bg-black/80 flex items-center justify-center p-4">
+                <div className="absolute inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#FFD600] text-center max-w-sm">
                         <h3 className="text-3xl font-black mb-2 uppercase">🥷 NINJA RUN</h3>
                         <p className="text-base font-bold mb-4 text-gray-600">Collect gems, avoid enemies!</p>
@@ -453,7 +453,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
 
             {/* Game Over */}
             {gameState === 'GAMEOVER' && (
-                <div className="absolute inset-0 z-[150] bg-red-600/80 flex items-center justify-center p-4">
+                <div className="absolute inset-0 z-[200] bg-red-600/80 flex items-center justify-center p-4">
                     <div className="bg-white border-8 border-black p-6 shadow-[15px_15px_0_#000] text-center max-w-sm">
                         <h3 className="text-3xl font-black mb-4 text-red-600 uppercase">GAME OVER</h3>
                         <p className="text-2xl font-black mb-4">Score: {score}</p>

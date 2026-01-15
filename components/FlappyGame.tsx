@@ -177,7 +177,7 @@ const FlappyGame: React.FC<FlappyGameProps> = ({ playerName, onGameOver, onNameC
     }, [gameState, handleGameOver]);
 
     return (
-        <div className="w-full h-full relative overflow-hidden select-none">
+        <div className="w-full h-full relative overflow-hidden select-none" style={{ touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
             {/* Sky gradient */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#4EC0CA] to-[#70C5CE]"></div>
 
@@ -251,7 +251,7 @@ const FlappyGame: React.FC<FlappyGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Enter Name */}
             {gameState === 'ENTER_NAME' && (
-                <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#73BF2E] text-center max-w-sm w-full">
                         <h3 className="text-2xl font-black uppercase mb-4">🐦 FLAPPY BIRD</h3>
                         <input
@@ -275,7 +275,7 @@ const FlappyGame: React.FC<FlappyGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Ready */}
             {gameState === 'READY' && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#F8E81C] text-center max-w-sm">
                         <h3 className="text-3xl font-black uppercase mb-2">🐦 FLAPPY BIRD</h3>
                         <p className="text-base font-bold mb-4 text-gray-600">Tap or press SPACE to fly!</p>
@@ -291,7 +291,7 @@ const FlappyGame: React.FC<FlappyGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Game Over */}
             {gameState === 'GAMEOVER' && (
-                <div className="absolute inset-0 bg-red-600/80 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-red-600/80 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#000] text-center max-w-sm">
                         <h3 className="text-2xl font-black uppercase mb-2 text-red-600">GAME OVER</h3>
                         <p className="text-3xl font-black mb-4">{score} 🏆</p>

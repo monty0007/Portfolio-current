@@ -145,7 +145,7 @@ const RacingGame: React.FC<RacingGameProps> = ({ playerName, onGameOver, onNameC
     const moveRight = () => setPlayerLane(prev => Math.min(NUM_LANES - 1, prev + 1));
 
     return (
-        <div className="w-full h-full relative overflow-hidden">
+        <div className="w-full h-full relative overflow-hidden select-none" style={{ touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none' }}>
             {/* Road Background */}
             <div className="absolute inset-0 bg-gradient-to-b from-gray-600 to-gray-800">
                 {/* Lane dividers */}
@@ -225,7 +225,7 @@ const RacingGame: React.FC<RacingGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Enter Name Screen */}
             {gameState === 'ENTER_NAME' && (
-                <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#FF4B4B] text-center max-w-sm w-full">
                         <h3 className="text-2xl font-black uppercase mb-4">🏎️ SPEED RUSH</h3>
                         <input
@@ -249,7 +249,7 @@ const RacingGame: React.FC<RacingGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Ready Screen */}
             {gameState === 'READY' && (
-                <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#FFD600] text-center max-w-sm">
                         <h3 className="text-3xl font-black uppercase mb-2">🏎️ SPEED RUSH</h3>
                         <p className="text-base font-bold mb-4 text-gray-600">Dodge the traffic! 5 lanes to navigate.</p>
@@ -265,7 +265,7 @@ const RacingGame: React.FC<RacingGameProps> = ({ playerName, onGameOver, onNameC
 
             {/* Game Over */}
             {gameState === 'GAMEOVER' && (
-                <div className="absolute inset-0 bg-red-600/85 flex items-center justify-center z-[100] p-4">
+                <div className="absolute inset-0 bg-red-600/85 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0_#000] text-center max-w-sm">
                         <h3 className="text-2xl font-black uppercase mb-2 text-red-600">💥 CRASH!</h3>
                         <p className="text-xl font-black mb-4">Distance: {score}m</p>
