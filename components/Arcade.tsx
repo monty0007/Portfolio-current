@@ -431,11 +431,11 @@ const Arcade: React.FC = () => {
 
       <div className="max-w-6xl w-full flex flex-col items-center justify-center relative z-10">
         <header className="text-center mb-10">
-          <div className="inline-block bg-black text-white px-6 py-2 font-black uppercase text-xl mb-4 rotate-[-1deg] shadow-[6px_6px_0px_#00A1FF]">
+          <div className="inline-block bg-black text-white px-4 sm:px-6 py-2 font-black uppercase text-sm sm:text-xl mb-4 rotate-[-1deg] shadow-[6px_6px_0px_#00A1FF]">
             NEURAL ARCADE V5.4
           </div>
-          <h2 className="text-5xl sm:text-7xl md:text-[8rem] font-black uppercase tracking-tighter leading-none">
-            ACTION <span className="text-white" style={{ WebkitTextStroke: '2px black', textShadow: '8px 8px 0px #FF4B4B' }}>BASTION</span>
+          <h2 className="text-4xl sm:text-7xl md:text-[8rem] font-black uppercase tracking-tighter leading-none">
+            ACTION <span className="text-white" style={{ WebkitTextStroke: '2px black', textShadow: '4px 4px 0px #FF4B4B' }}>BASTION</span>
           </h2>
         </header>
 
@@ -563,27 +563,35 @@ const Arcade: React.FC = () => {
             )}
 
             {/* Mobile Controls - Optimized Layout */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end z-[200] pointer-events-none touch-none">
-              <div className="flex gap-4 pointer-events-auto">
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end z-[200] pointer-events-none touch-none select-none">
+              <div className="flex gap-3 pointer-events-auto">
                 <button
                   onPointerDown={() => setKey('BtnLeft', true)}
                   onPointerUp={() => setKey('BtnLeft', false)}
                   onPointerLeave={() => setKey('BtnLeft', false)}
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md border-4 border-white/50 rounded-2xl flex items-center justify-center text-white text-3xl active:scale-90 active:bg-white/40 transition-all shadow-lg"
-                >◀</button>
+                  className="w-14 h-14 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md border-4 border-white/50 rounded-2xl flex items-center justify-center active:scale-95 active:bg-white/40 transition-all shadow-lg select-none"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
                 <button
                   onPointerDown={() => setKey('BtnRight', true)}
                   onPointerUp={() => setKey('BtnRight', false)}
                   onPointerLeave={() => setKey('BtnRight', false)}
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md border-4 border-white/50 rounded-2xl flex items-center justify-center text-white text-3xl active:scale-90 active:bg-white/40 transition-all shadow-lg"
-                >▶</button>
+                  className="w-14 h-14 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-md border-4 border-white/50 rounded-2xl flex items-center justify-center active:scale-95 active:bg-white/40 transition-all shadow-lg select-none"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
               </div>
               <div className="pointer-events-auto">
                 <button
                   onPointerDown={() => setKey('BtnJump', true)}
                   onPointerUp={() => setKey('BtnJump', false)}
                   onPointerLeave={() => setKey('BtnJump', false)}
-                  className="w-20 h-20 sm:w-24 sm:h-24 bg-[#FF4B4B]/90 border-[4px] border-black rounded-full flex items-center justify-center text-white font-black text-xl shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none active:bg-red-600"
+                  className="w-16 h-16 sm:w-24 sm:h-24 bg-[#FF4B4B]/90 border-[4px] border-black rounded-full flex items-center justify-center text-white font-black text-sm sm:text-xl shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none active:bg-red-600 select-none"
                 >JUMP</button>
               </div>
             </div>

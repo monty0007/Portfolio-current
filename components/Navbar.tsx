@@ -42,22 +42,22 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
   };
 
   return (
-    <nav className={`fixed top-6 left-1/2 z-[110] w-[90%] max-w-5xl transition-all duration-500 ease-in-out ${isVisible ? 'nav-visible' : 'nav-hidden'}`}>
-      <div className="bg-white border-[4px] border-black shadow-[8px_8px_0px_#000] px-8 py-4 flex items-center justify-between">
+    <nav className={`fixed top-4 sm:top-6 left-1/2 z-[110] w-[95%] sm:w-[90%] max-w-5xl transition-all duration-500 ease-in-out ${isVisible ? 'nav-visible' : 'nav-hidden'}`}>
+      <div className="bg-white border-[3px] sm:border-[4px] border-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
         <div
-          className="text-2xl font-black tracking-tighter flex items-center gap-3 cursor-pointer group"
+          className="text-2xl font-black tracking-tighter flex items-center gap-2 sm:gap-3 cursor-pointer group"
           onClick={() => {
             navigate('/');
             window.scrollTo({ top: 0, behavior: 'instant' });
           }}
         >
-          <div className="w-10 h-10 bg-[#FFD600] border-4 border-black rounded-full flex items-center justify-center font-black group-hover:rotate-12 transition-transform">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FFD600] border-2 sm:border-4 border-black rounded-full flex items-center justify-center font-black group-hover:rotate-12 transition-transform text-xs sm:text-base">
             MY
           </div>
           <span className="hidden sm:inline uppercase">Manish Yadav</span>
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-10 font-black uppercase text-xs sm:text-sm">
+        <div className="flex items-center gap-3 sm:gap-10 font-black uppercase text-[10px] sm:text-sm">
           <a
             href="#about"
             onClick={(e) => handleLinkClick(e, 'about')}
@@ -80,7 +80,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
           </button>
           <a
             href="mailto:monty.my1234@gmail.com"
-            className="cartoon-btn bg-black text-white px-4 sm:px-6 py-2 rounded-none hover:bg-[#FFD600] hover:text-black shadow-none active:translate-y-1"
+            className="cartoon-btn bg-black text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-none hover:bg-[#FFD600] hover:text-black shadow-none active:translate-y-1 whitespace-nowrap"
           >
             PING ME!
           </a>

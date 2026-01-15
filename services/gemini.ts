@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 // ⚠️ SECURITY: Ideally use process.env.GEMINI_API_KEY
 // The new SDK automatically looks for 'GEMINI_API_KEY' in .env if you leave the config empty!
-const apiKey = "AIzaSyCur1pWYmEN9jgG3axM5BSrDzMrBw8ERnw";
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
