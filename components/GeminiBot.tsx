@@ -66,8 +66,8 @@ const GeminiBot: React.FC = () => {
               POCKET ASSISTANT
             </h3>
             <div className="flex gap-2">
-              <button onClick={handleClear} className="font-bold text-xs bg-black text-white px-2 py-1 hover:bg-red-500 uppercase">Clear</button>
-              <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-red-500 text-white font-black border-2 border-black hover:bg-black hover:scale-90 transition-all shadow-[2px_2px_0px_#000]">×</button>
+              <button onClick={handleClear} aria-label="Clear chat history" className="font-bold text-xs bg-black text-white px-2 py-1 hover:bg-red-500 uppercase">Clear</button>
+              <button onClick={() => setIsOpen(false)} aria-label="Close chat" className="w-8 h-8 flex items-center justify-center bg-red-500 text-white font-black border-2 border-black hover:bg-black hover:scale-90 transition-all shadow-[2px_2px_0px_#000]">×</button>
             </div>
           </div>
 
@@ -96,7 +96,7 @@ const GeminiBot: React.FC = () => {
               placeholder="Ask me something..."
               className="flex-1 p-2 border-2 border-black focus:outline-none"
             />
-            <button onClick={handleSend} className="bg-black text-white px-4 py-2 font-bold hover:bg-red-500 transition-colors">
+            <button onClick={handleSend} aria-label="Send message" className="bg-black text-white px-4 py-2 font-bold hover:bg-red-500 transition-colors">
               SEND
             </button>
           </div>
@@ -104,6 +104,7 @@ const GeminiBot: React.FC = () => {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
+          aria-label="Open chat assistant"
           className="w-20 h-20 bg-[#FFD600] border-4 border-black cartoon-border-hover transition-all cartoon-border rounded-full flex items-center justify-center overflow-hidden"
         >
           <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=ShinchanAssistant" className="w-14 h-14" alt="Bot" />

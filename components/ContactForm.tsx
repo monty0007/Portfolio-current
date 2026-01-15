@@ -116,9 +116,10 @@ const ContactForm: React.FC = () => {
         </div>
 
         <div>
-          <label className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Gadget of Interest</label>
+          <label htmlFor="service-select" className="block font-black uppercase text-[10px] md:text-xs mb-1 md:mb-2 text-black">Gadget of Interest</label>
           <div className="relative">
             <select
+              id="service-select"
               value={formData.service}
               onChange={e => setFormData({ ...formData, service: e.target.value })}
               className="w-full p-3 md:p-4 border-[3px] md:border-4 border-black font-bold focus:bg-yellow-50 focus:outline-none focus:ring-4 focus:ring-yellow-400 bg-white text-black text-sm md:text-base appearance-none"

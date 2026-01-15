@@ -283,12 +283,14 @@ const RacingGame: React.FC<RacingGameProps> = ({ playerName, onGameOver, onNameC
             {gameState === 'PLAYING' && (
                 <div className="absolute bottom-2 left-2 right-2 flex justify-between z-[200]">
                     <button
+                        aria-label="Move left lane"
                         onPointerDown={moveLeft}
                         className="w-14 h-14 bg-white/25 backdrop-blur border-2 border-white/50 rounded-xl flex items-center justify-center active:scale-90"
                     >
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M15 18l-6-6 6-6" /></svg>
                     </button>
                     <button
+                        aria-label="Move right lane"
                         onPointerDown={moveRight}
                         className="w-14 h-14 bg-white/25 backdrop-blur border-2 border-white/50 rounded-xl flex items-center justify-center active:scale-90"
                     >

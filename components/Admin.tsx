@@ -403,12 +403,18 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4">Earned Badges</h3>
               <div className="overflow-y-auto max-h-[800px] space-y-3">
                 {achievements.map(ach => (
-                  <div key={ach.id} className="bg-white border-4 border-black p-4 flex justify-between items-center shadow-[4px_4px_0px_#000]">
-                    <div className="flex items-center gap-3 font-black uppercase text-sm">
-                      <span className="text-xl">{ach.icon}</span>
+                  <div key={ach.id} className="bg-white border-4 border-black p-4 flex justify-between items-center gap-4 shadow-[4px_4px_0px_#000]">
+                    <div className="flex items-center gap-3 font-black uppercase text-sm min-w-0 flex-1">
+                      <span className="text-xl flex-shrink-0">{ach.icon}</span>
                       <span className="truncate">{ach.title}</span>
                     </div>
-                    <button onClick={() => setAchievements(deleteAchievement(ach.id))} className="w-8 h-8 bg-red-100 text-red-600 border-2 border-black">×</button>
+                    <button
+                      aria-label="Delete badge"
+                      onClick={() => setAchievements(deleteAchievement(ach.id))}
+                      className="w-10 h-10 bg-red-500 text-white border-2 border-black font-black text-lg flex-shrink-0 hover:bg-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>

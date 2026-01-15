@@ -468,6 +468,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
             <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end z-[200] pointer-events-none">
                 <div className="flex gap-2 pointer-events-auto">
                     <button
+                        aria-label="Move left"
                         onPointerDown={() => setKey('BtnLeft', true)}
                         onPointerUp={() => setKey('BtnLeft', false)}
                         onPointerLeave={() => setKey('BtnLeft', false)}
@@ -476,6 +477,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><path d="M15 18l-6-6 6-6" /></svg>
                     </button>
                     <button
+                        aria-label="Move right"
                         onPointerDown={() => setKey('BtnRight', true)}
                         onPointerUp={() => setKey('BtnRight', false)}
                         onPointerLeave={() => setKey('BtnRight', false)}
@@ -485,6 +487,7 @@ const NinjaGame: React.FC<NinjaGameProps> = ({ playerName, onGameOver, onScoreCh
                     </button>
                 </div>
                 <button
+                    aria-label="Jump"
                     onPointerDown={() => setKey('BtnJump', true)}
                     onPointerUp={() => setKey('BtnJump', false)}
                     onPointerLeave={() => setKey('BtnJump', false)}
