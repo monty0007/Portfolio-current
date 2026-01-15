@@ -70,7 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
           <span className="hidden sm:inline uppercase">Manish Yadav</span>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-10 font-black uppercase text-[10px] sm:text-sm">
+        <div className="flex items-center gap-3 sm:gap-6 font-black uppercase text-[10px] sm:text-sm">
           <a
             href="#about"
             onClick={(e) => handleLinkClick(e, 'about')}
@@ -85,6 +85,20 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
           >
             Works
           </a>
+          <a
+            href="#achievements"
+            onClick={(e) => handleLinkClick(e, 'achievements')}
+            className={`hover:text-purple-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
+          >
+            Badges
+          </a>
+          <a
+            href="#arcade"
+            onClick={(e) => handleLinkClick(e, 'arcade')}
+            className={`hidden sm:block hover:text-yellow-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
+          >
+            Games
+          </a>
           <button
             onClick={() => onNavigate('blog')}
             className={`cursor-pointer hover:text-green-500 transition-colors uppercase font-black ${currentView === 'blog' ? 'text-green-500 underline decoration-4' : 'text-black'}`}
@@ -92,7 +106,8 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             Blog
           </button>
           <a
-            href="mailto:monty.my1234@gmail.com"
+            href="#contact-banner"
+            onClick={(e) => handleLinkClick(e, 'contact-banner')}
             className="cartoon-btn bg-black text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-none hover:bg-[#FFD600] hover:text-black shadow-none active:translate-y-1 whitespace-nowrap"
           >
             PING ME!

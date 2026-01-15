@@ -43,7 +43,7 @@ const Hero: React.FC = () => {
       {techStack.map((tech, i) => (
         <div
           key={i}
-          className={`absolute ${tech.pos} ${tech.size} floating opacity-40 md:opacity-90 z-20 pointer-events-none transition-transform duration-300 ease-out p-1`}
+          className={`absolute ${tech.pos} ${tech.size} floating opacity-40 md:opacity-90 z-0 pointer-events-none transition-transform duration-300 ease-out p-1`}
           style={{
             animationDelay: tech.delay,
             transform: `translate(${mousePos.x * tech.factor}px, ${mousePos.y * tech.factor}px)`
@@ -57,7 +57,7 @@ const Hero: React.FC = () => {
         </div>
       ))}
 
-      <div className="max-w-6xl w-full text-center z-10">
+      <div className="max-w-6xl w-full text-center z-20 relative">
         <div className="inline-block bg-[#FF4B4B] text-white px-4 md:px-6 py-2 text-sm md:text-base font-black cartoon-btn mb-4 md:mb-6 rotate-[-2deg] shadow-[4px_4px_0px_#000] cursor-default">
           Hi, I'm Manish Yadav
         </div>
