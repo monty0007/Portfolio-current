@@ -1,30 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getTopScores, saveScore as saveScoreToDb } from '../services/scoreService';
 
-// Animated Sprite Component - Now optimized to not re-render on every frame
-// We will toggle classes/attributes via ref instead of props where possible, 
-// or accept that this small component re-rendering is okay if parent doesn't.
-// Actually, with direct DOM manipulation, we can just toggle classes on the ref.
+// Animated Sprite Component - Redesigned for performance and style
 const NeuralNinja: React.FC<{
   playerRef: React.RefObject<HTMLDivElement>;
 }> = ({ playerRef }) => {
   return (
-    <div ref={playerRef} className="w-full h-full relative transition-transform duration-100 will-change-transform">
-      <div
-        className="ninja-body absolute inset-0 border-[3px] border-white rounded-xl flex items-center justify-center overflow-hidden shadow-[4px_4px_0px_rgba(0,0,0,0.4)] transition-colors duration-300 bg-black"
-      >
-        <div className="ninja-headband absolute top-1 w-full h-4 border-y-2 border-white flex justify-center bg-[#FF4B4B]">
-          <div className="ninja-ribbon w-1 h-5 border-2 border-white absolute -right-1 rotate-12 bg-[#FF4B4B]"></div>
+    <div ref={playerRef} className="w-full h-full relative">
+      {/* Robot Ninja Body */}
+      <div className="ninja-body absolute inset-0 bg-gradient-to-b from-slate-700 to-slate-900 border-[3px] border-cyan-400 rounded-lg flex flex-col items-center justify-start overflow-hidden shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+        {/* Visor */}
+        <div className="w-full h-[40%] bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 mt-1 mx-1 rounded-sm border-2 border-black flex items-center justify-center">
+          <div className="w-[60%] h-[60%] bg-black/80 rounded-sm flex items-center justify-center gap-1">
+            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
-        <div className="flex gap-2 mt-2">
-          <div className="ninja-eye w-2 h-2 bg-white rounded-full"></div>
-          <div className="ninja-eye w-2 h-2 bg-white rounded-full"></div>
+        {/* Chest Panel */}
+        <div className="w-[70%] h-[30%] bg-slate-800 border border-cyan-400/50 mt-1 rounded-sm flex items-center justify-center">
+          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
         </div>
-        <div className="ninja-power-aura absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.4)_0%,transparent_70%)] animate-pulse hidden"></div>
       </div>
+      {/* Legs */}
       <div className="absolute -bottom-2 left-0 right-0 flex justify-around px-1">
-        <div className="ninja-leg w-3 h-4 bg-black border-2 border-white rounded-full"></div>
-        <div className="ninja-leg w-3 h-4 bg-black border-2 border-white rounded-full" style={{ animationDelay: '0.1s' }}></div>
+        <div className="ninja-leg w-3 h-4 bg-slate-800 border-2 border-cyan-400/50 rounded-sm"></div>
+        <div className="ninja-leg w-3 h-4 bg-slate-800 border-2 border-cyan-400/50 rounded-sm"></div>
       </div>
     </div>
   );
@@ -105,36 +105,36 @@ const Arcade: React.FC = () => {
 
   // Initialize Game Objects
   useEffect(() => {
-    // Generate Coins logic
+    // Generate Coins - Placed at reachable heights above platforms
     const manyCoins = [];
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 60; i++) {
       manyCoins.push({
         id: i,
-        x: 50 + (i * 40),
-        y: 30 + Math.random() * 40,
+        x: 60 + (i * 65),
+        y: 55 + (i % 3) * 10, // y = 55, 65, or 75 (reachable by jumping)
         collected: false,
-        type: (i % 12 === 0) ? 'power' : 'coin' as 'power' | 'coin'
+        type: (i % 10 === 0) ? 'power' : 'coin' as 'power' | 'coin'
       });
     }
     coinsRef.current = manyCoins;
 
-    // Initialize Obstacles
+    // Initialize Obstacles - Ranges now match platform widths
     obstaclesRef.current = [
-      { id: 1, x: 120, y: 75, range: 25, startX: 115, dir: 1, type: 'ground' },
-      { id: 2, x: 235, y: 75, range: 40, startX: 235, dir: 1, type: 'ground' },
-      { id: 3, x: 170, y: 30, range: 30, startX: 170, dir: 1, type: 'fly', phase: 0 },
-      { id: 4, x: 300, y: 20, range: 50, startX: 300, dir: -1, type: 'fly', phase: Math.PI },
-      { id: 5, x: 450, y: 65, range: 60, startX: 450, dir: 1, type: 'ground' },
-      { id: 6, x: 600, y: 35, range: 40, startX: 600, dir: -1, type: 'fly', phase: 0.5 },
-      { id: 7, x: 850, y: 70, range: 30, startX: 850, dir: 1, type: 'ground' },
-      { id: 8, x: 1100, y: 20, range: 80, startX: 1100, dir: 1, type: 'fly' },
-      { id: 9, x: 1400, y: 65, range: 40, startX: 1400, dir: -1, type: 'ground' },
-      { id: 10, x: 1750, y: 40, range: 100, startX: 1750, dir: 1, type: 'fly' },
-      { id: 11, x: 2100, y: 75, range: 50, startX: 2100, dir: 1, type: 'ground' },
-      { id: 12, x: 2400, y: 30, range: 120, startX: 2400, dir: -1, type: 'fly' },
-      { id: 13, x: 3000, y: 75, range: 200, startX: 3000, dir: 1, type: 'ground' },
-      { id: 14, x: 3500, y: 25, range: 150, startX: 3500, dir: -1, type: 'fly' },
-      { id: 15, x: 4000, y: 70, range: 50, startX: 4000, dir: 1, type: 'ground' },
+      { id: 1, x: 140, y: 75, range: 15, startX: 140, dir: 1, type: 'ground' },
+      { id: 2, x: 280, y: 75, range: 20, startX: 280, dir: 1, type: 'ground' },
+      { id: 3, x: 170, y: 30, range: 20, startX: 170, dir: 1, type: 'fly', phase: 0 },
+      { id: 4, x: 300, y: 20, range: 30, startX: 300, dir: -1, type: 'fly', phase: Math.PI },
+      { id: 5, x: 470, y: 55, range: 15, startX: 470, dir: 1, type: 'ground' },
+      { id: 6, x: 570, y: 70, range: 20, startX: 570, dir: 1, type: 'ground' },
+      { id: 7, x: 700, y: 50, range: 20, startX: 700, dir: -1, type: 'fly', phase: 0.5 },
+      { id: 8, x: 820, y: 75, range: 30, startX: 820, dir: 1, type: 'ground' },
+      { id: 9, x: 1000, y: 55, range: 15, startX: 1000, dir: -1, type: 'ground' },
+      { id: 10, x: 1200, y: 30, range: 40, startX: 1200, dir: 1, type: 'fly' },
+      { id: 11, x: 1500, y: 60, range: 25, startX: 1500, dir: 1, type: 'ground' },
+      { id: 12, x: 1800, y: 75, range: 50, startX: 1800, dir: -1, type: 'ground' },
+      { id: 13, x: 2300, y: 35, range: 60, startX: 2300, dir: 1, type: 'fly' },
+      { id: 14, x: 2700, y: 75, range: 40, startX: 2700, dir: 1, type: 'ground' },
+      { id: 15, x: 3200, y: 40, range: 50, startX: 3200, dir: -1, type: 'fly' },
     ];
   }, []);
 
@@ -331,12 +331,21 @@ const Arcade: React.FC = () => {
       // OBSTACLES
       const obstacles = obstaclesRef.current;
       obstacles.forEach(obs => {
+        if (obs.y > 200) return; // Skip dead enemies
+
         if (obs.type === 'ground') {
           obs.x += (0.18 * obs.dir) * deltaTime;
-          if (Math.abs(obs.x - obs.startX) > obs.range) obs.dir *= -1;
+          // Bound movement to range
+          if (obs.x < obs.startX - obs.range || obs.x > obs.startX + obs.range) {
+            obs.dir *= -1;
+            obs.x = Math.max(obs.startX - obs.range, Math.min(obs.x, obs.startX + obs.range));
+          }
         } else {
           obs.x += (0.25 * obs.dir) * deltaTime;
-          if (Math.abs(obs.x - obs.startX) > obs.range) obs.dir *= -1;
+          if (obs.x < obs.startX - obs.range || obs.x > obs.startX + obs.range) {
+            obs.dir *= -1;
+            obs.x = Math.max(obs.startX - obs.range, Math.min(obs.x, obs.startX + obs.range));
+          }
           const phase = obs.phase || 0;
           obs.y = 25 + Math.sin(time / 400 + phase) * 12;
         }
@@ -344,19 +353,26 @@ const Arcade: React.FC = () => {
         // Render obstacle directly
         const obsEl = document.getElementById(`obs-${obs.id}`);
         if (obsEl) {
-          obsEl.style.left = `${obs.x}%`;
-          obsEl.style.top = `${obs.y}%`;
+          if (obs.y > 200) {
+            obsEl.style.display = 'none';
+          } else {
+            obsEl.style.left = `${obs.x}%`;
+            obsEl.style.top = `${obs.y}%`;
+          }
         }
 
         const dx = Math.abs(obs.x - p.x);
         const dy = Math.abs(obs.y - (p.y - 5));
-        if (dx < 5 && dy < 8) {
+        if (dx < 4 && dy < 6) {
           if (p.isPowered) {
-            obs.y = 500; // Knock out
+            obs.y = 500; // Mark as dead
             currentScore += 500;
-            setScore(currentScore); // Updating React state efficiently? Maybe throttle this
+            setScore(currentScore);
+            // Immediately hide
+            const el = document.getElementById(`obs-${obs.id}`);
+            if (el) el.style.display = 'none';
           } else {
-            setScore(currentScore); // Ensure final score is set
+            setScore(currentScore);
             handleGameOver();
             return;
           }
@@ -439,23 +455,69 @@ const Arcade: React.FC = () => {
           </h2>
         </header>
 
-        {/* Game Cabinet */}
-        <div className="w-full max-w-[1000px] aspect-[4/5] sm:aspect-[16/9] bg-[#111] border-[8px] sm:border-[12px] border-black rounded-[2rem] sm:rounded-[4rem] shadow-[15px_15px_0px_#000] sm:shadow-[40px_40px_0px_#000] relative overflow-hidden flex flex-col p-2 sm:p-4 mb-16">
+        {/* Game Cabinet - Fixed aspect ratio for all screens */}
+        <div className="w-full max-w-[1000px] aspect-[16/10] bg-[#111] border-[6px] sm:border-[12px] border-black rounded-2xl sm:rounded-[4rem] shadow-[10px_10px_0px_#000] sm:shadow-[40px_40px_0px_#000] relative overflow-hidden flex flex-col p-2 sm:p-4 mb-16">
 
-          <div className="flex-1 rounded-[1.5rem] sm:rounded-[3rem] bg-gradient-to-b from-sky-400 to-sky-200 overflow-hidden relative border-2 sm:border-4 border-black/30 crt-screen">
+          <div className="flex-1 rounded-xl sm:rounded-[3rem] overflow-hidden relative border-2 sm:border-4 border-black/30">
+            {/* Sky Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-sky-400 via-sky-300 to-emerald-200"></div>
+
+            {/* Clouds Layer */}
+            <div className="absolute top-[5%] left-[10%] w-[15%] h-[8%] bg-white/80 rounded-full blur-sm"></div>
+            <div className="absolute top-[8%] left-[35%] w-[20%] h-[10%] bg-white/70 rounded-full blur-sm"></div>
+            <div className="absolute top-[3%] left-[60%] w-[12%] h-[6%] bg-white/60 rounded-full blur-sm"></div>
+            <div className="absolute top-[10%] left-[80%] w-[18%] h-[9%] bg-white/70 rounded-full blur-sm"></div>
+
+            {/* Distant Hills Layer */}
+            <div className="absolute bottom-[25%] left-0 right-0 h-[15%]">
+              <svg viewBox="0 0 1200 100" preserveAspectRatio="none" className="w-full h-full">
+                <path d="M0,80 Q150,20 300,60 T600,40 T900,70 T1200,50 L1200,100 L0,100 Z" fill="#4ade80" opacity="0.6" />
+              </svg>
+            </div>
+
+            {/* Mid Hills Layer */}
+            <div className="absolute bottom-[20%] left-0 right-0 h-[20%]">
+              <svg viewBox="0 0 1200 100" preserveAspectRatio="none" className="w-full h-full">
+                <path d="M0,60 Q200,10 400,50 T800,30 T1200,60 L1200,100 L0,100 Z" fill="#22c55e" opacity="0.7" />
+              </svg>
+            </div>
 
             {/* GAME WORLD CONTAINER */}
             <div
               ref={cameraDivRef}
-              className="absolute inset-0 transition-transform duration-0 ease-linear will-change-transform" // duration-0 for instant sync
+              className="absolute inset-0"
             >
+              {/* Scrolling Hills Inside Game World */}
+              <div className="absolute bottom-[18%] w-[500%] h-[25%] pointer-events-none">
+                <svg viewBox="0 0 5000 200" preserveAspectRatio="none" className="w-full h-full">
+                  <path d="M0,150 Q200,50 400,120 T800,80 T1200,140 T1600,60 T2000,130 T2400,70 T2800,150 T3200,90 T3600,140 T4000,60 T4400,120 T4800,80 L5000,200 L0,200 Z" fill="#86efac" />
+                </svg>
+              </div>
+              <div className="absolute bottom-[15%] w-[500%] h-[20%] pointer-events-none">
+                <svg viewBox="0 0 5000 200" preserveAspectRatio="none" className="w-full h-full">
+                  <path d="M0,120 Q300,30 600,100 T1200,50 T1800,110 T2400,40 T3000,100 T3600,60 T4200,120 T4800,70 L5000,200 L0,200 Z" fill="#4ade80" />
+                </svg>
+              </div>
+
               {platformsRef.current.map((p, i) => (
                 <div
                   key={i}
                   className="absolute bg-[#3E2723] border-[4px] sm:border-[6px] border-black"
                   style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, height: '200%' }}
                 >
-                  <div className="w-full h-4 sm:h-8 bg-emerald-500 border-b-2 sm:border-b-4 border-black"></div>
+                  {/* Grass on top of platform */}
+                  <div className="w-full h-4 sm:h-8 bg-emerald-500 border-b-2 sm:border-b-4 border-black relative overflow-hidden">
+                    {/* Grass blades */}
+                    <div className="absolute bottom-0 left-[5%] w-1 h-3 bg-green-600 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[15%] w-1 h-4 bg-green-700 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[25%] w-1 h-2 bg-green-600 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[35%] w-1 h-3 bg-green-700 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[50%] w-1 h-4 bg-green-600 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[65%] w-1 h-2 bg-green-700 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[75%] w-1 h-3 bg-green-600 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[85%] w-1 h-4 bg-green-700 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-[95%] w-1 h-2 bg-green-600 rounded-t-full"></div>
+                  </div>
                 </div>
               ))}
 
@@ -464,7 +526,7 @@ const Arcade: React.FC = () => {
                   <div
                     key={c.id}
                     id={`coin-${c.id}`}
-                    className={`absolute text-3xl sm:text-5xl flex flex-col items-center justify-center animate-bounce`}
+                    className={`absolute text-2xl sm:text-4xl flex flex-col items-center justify-center`}
                     style={{
                       left: `${c.x}%`,
                       top: `${c.y - 8}%`,
@@ -472,7 +534,7 @@ const Arcade: React.FC = () => {
                       display: c.collected ? 'none' : 'flex'
                     }}
                   >
-                    <span>{c.type === 'coin' ? '💎' : '⭐'}</span>
+                    <span>{c.type === 'coin' ? '💎' : '⚡'}</span>
                   </div>
                 ))}
               </div>
@@ -482,20 +544,24 @@ const Arcade: React.FC = () => {
                   <div
                     key={obs.id}
                     id={`obs-${obs.id}`}
-                    className="absolute w-[10%] sm:w-[6%] h-[12%] sm:h-[10%] flex flex-col items-center justify-center text-4xl sm:text-6xl transition-none"
+                    className="absolute w-[6%] sm:w-[4%] h-[10%] sm:h-[8%] flex flex-col items-center justify-center"
                     style={{ left: `${obs.x}%`, top: `${obs.y}%`, transform: 'translate(-50%, -100%)' }}
                   >
-                    <div className="animate-bounce">
-                      {obs.type === 'fly' ? '👾' : '😈'}
+                    <div className={`w-full h-full rounded-full border-2 border-black flex items-center justify-center ${obs.type === 'fly' ? 'bg-purple-600' : 'bg-red-600'}`}>
+                      {obs.type === 'fly' ? (
+                        <svg viewBox="0 0 24 24" className="w-[70%] h-[70%] fill-white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-4-8c.79 0 1.5-.71 1.5-1.5S8.79 9 8 9s-1.5.71-1.5 1.5S7.21 11 8 11zm8 0c.79 0 1.5-.71 1.5-1.5S16.79 9 16 9s-1.5.71-1.5 1.5.71 1.5 1.5 1.5zm-4 4c2.21 0 4-1.79 4-4h-8c0 2.21 1.79 4 4 4z" /></svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" className="w-[70%] h-[70%] fill-white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-6l1.41-1.41L12 16.17l3.59-3.58L17 14l-5 5-5-5z" /></svg>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* PLAYER */}
+              {/* PLAYER - Smaller for better gameplay */}
               <div
                 ref={playerDivRef}
-                className="absolute w-[14%] h-[20%] z-50 will-change-transform transition-none"
+                className="absolute w-[8%] h-[14%] z-50"
                 style={{
                   left: `${playerState.current.x}%`,
                   top: `${playerState.current.y}%`,
@@ -550,12 +616,12 @@ const Arcade: React.FC = () => {
             )}
 
             {gameState === 'GAMEOVER' && (
-              <div className="absolute inset-0 z-[150] bg-red-600/80 flex items-center justify-center p-4">
-                <div className="bg-white border-[8px] border-black p-6 sm:p-12 shadow-[15px_15px_0px_#000] text-center -rotate-1 w-full max-w-lg">
-                  <h3 className="text-4xl sm:text-7xl font-black mb-4 text-red-600 uppercase leading-none">SYSTEM CRASHED</h3>
-                  <div className="mb-2 font-black text-2xl uppercase">SCORE: {score}</div>
+              <div className="absolute inset-0 z-[150] bg-red-600/80 flex items-center justify-center p-2 sm:p-4">
+                <div className="bg-white border-4 sm:border-[8px] border-black p-4 sm:p-12 shadow-[8px_8px_0px_#000] sm:shadow-[15px_15px_0px_#000] text-center -rotate-1 w-full max-w-sm sm:max-w-lg">
+                  <h3 className="text-2xl sm:text-7xl font-black mb-2 sm:mb-4 text-red-600 uppercase leading-none">SYSTEM CRASHED</h3>
+                  <div className="mb-2 font-black text-lg sm:text-2xl uppercase">SCORE: {score}</div>
                   {lastSavedScore !== null && (
-                    <div className="mb-6 text-green-600 font-black text-sm uppercase">✅ RECORDED ON LEADERBOARD</div>
+                    <div className="mb-4 sm:mb-6 text-green-600 font-black text-[10px] sm:text-sm uppercase">✅ RECORDED</div>
                   )}
                   <button onClick={startGame} className="cartoon-btn w-full bg-[#00A1FF] text-white py-4 sm:py-8 font-black text-3xl sm:text-5xl uppercase">REBOOT</button>
                 </div>

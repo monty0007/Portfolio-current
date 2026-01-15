@@ -1,32 +1,58 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manish Yadav | GenAI Engineer</title>
-    
+
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Manish Yadav (Monty) - GenAI Engineer & Full Stack Developer building intelligent workflows with LLMs and modern web tech.">
-    <meta name="keywords" content="GenAI, AI Engineer, Full Stack Developer, React, Portfolio, Manish Yadav, Machine Learning, Automation, Power Platform">
+    <meta name="description"
+        content="Manish Yadav (Monty) - GenAI Engineer & Full Stack Developer building intelligent workflows with LLMs and modern web tech.">
+    <meta name="keywords"
+        content="GenAI, AI Engineer, Full Stack Developer, React, Portfolio, Manish Yadav, Machine Learning, Automation, Power Platform">
     <meta name="author" content="Manish Yadav">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://manishyadav.dev/">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://manishyadav.dev/">
     <meta property="og:title" content="Manish Yadav | GenAI Engineer">
-    <meta property="og:description" content="Building intelligent systems that simplify work. Explore my portfolio of AI agents, web apps, and automation projects.">
+    <meta property="og:description"
+        content="Building intelligent systems that simplify work. Explore my portfolio of AI agents, web apps, and automation projects.">
     <meta property="og:image" content="/weew.png">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:title" content="Manish Yadav | GenAI Engineer">
-    <meta property="twitter:description" content="Building intelligent systems that simplify work. Explore my portfolio of AI agents, web apps, and automation projects.">
+    <meta property="twitter:description"
+        content="Building intelligent systems that simplify work. Explore my portfolio of AI agents, web apps, and automation projects.">
     <meta property="twitter:image" content="/weew.png">
-    <link href="/global.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
 
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Manish Yadav",
+      "alternateName": "Monty",
+      "jobTitle": "GenAI Engineer",
+      "description": "GenAI Engineer & Full Stack Developer building intelligent workflows with LLMs and modern web tech.",
+      "url": "https://manishyadav.dev/",
+      "email": "monty.my1234@gmail.com",
+      "sameAs": [],
+      "knowsAbout": ["Artificial Intelligence", "Machine Learning", "LLMs", "React", "TypeScript", "Power Platform"]
+    }
+    </script>
+
+    <!-- Preconnect for faster font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="/global.css" rel="stylesheet">
+    <style>
         /* Neubrutalist Buttons */
         .cartoon-btn {
             position: relative;
@@ -40,10 +66,12 @@
             align-items: center;
             justify-content: center;
         }
+
         .cartoon-btn:hover {
             transform: translate(-3px, -3px);
             box-shadow: 10px 10px 0px #000;
         }
+
         .cartoon-btn:active {
             transform: translate(6px, 6px);
             box-shadow: 0px 0px 0px #000;
@@ -56,33 +84,53 @@
             background: #111;
             border: 10px solid #222;
         }
+
         .crt-screen::before {
             content: " ";
             display: block;
             position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             z-index: 10;
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
         }
+
         .crt-screen::after {
             content: " ";
             display: block;
             position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
             background: rgba(18, 16, 16, 0.1);
             opacity: 0;
             z-index: 10;
             pointer-events: none;
             animation: flicker 0.15s infinite;
         }
+
         @keyframes flicker {
-            0% { opacity: 0.27861; }
-            5% { opacity: 0.34769; }
-            10% { opacity: 0.23604; }
-            100% { opacity: 0.2; }
+            0% {
+                opacity: 0.27861;
+            }
+
+            5% {
+                opacity: 0.34769;
+            }
+
+            10% {
+                opacity: 0.23604;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
         }
 
         /* Halftone Pattern for high-end look */
@@ -96,23 +144,51 @@
             animation: float 6s infinite ease-in-out;
             will-change: transform;
         }
+
         @keyframes float {
-            0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-            33% { transform: translate3d(10px, -20px, 0) rotate(5deg); }
-            66% { transform: translate3d(-10px, 15px, 0) rotate(-5deg); }
+
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0) rotate(0deg);
+            }
+
+            33% {
+                transform: translate3d(10px, -20px, 0) rotate(5deg);
+            }
+
+            66% {
+                transform: translate3d(-10px, 15px, 0) rotate(-5deg);
+            }
         }
 
-        .nav-hidden { transform: translate(-50%, -150%); }
-        .nav-visible { transform: translate(-50%, 0); }
+        .nav-hidden {
+            transform: translate(-50%, -150%);
+        }
 
-        ::-webkit-scrollbar { width: 14px; }
-        ::-webkit-scrollbar-track { background: #FFD600; }
-        ::-webkit-scrollbar-thumb { background: #000; border: 4px solid #FFD600; border-radius: 10px; }
+        .nav-visible {
+            transform: translate(-50%, 0);
+        }
+
+        ::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #FFD600;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #000;
+            border: 4px solid #FFD600;
+            border-radius: 10px;
+        }
     </style>
 
 </head>
+
 <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

@@ -203,11 +203,21 @@ const Blog: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {filteredBlogs.length > 0 ? filteredBlogs.map((post) => (
+          {loading ? (
+            // Loading Skeleton
+            [...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 h-64 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded w-full mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))
+          ) : filteredBlogs.length > 0 ? filteredBlogs.map((post) => (
             <div
               key={post.id}
               onClick={() => navigate(`/blog/${post.slug || post.id}`)}
-              className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all cursor-pointer group h-full"
+              className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all duration-200 ease-out cursor-pointer group h-full"
             >
               <div
                 className="w-full h-12 mb-6 border-b-4 border-black font-black uppercase flex items-center justify-between"
@@ -216,7 +226,7 @@ const Blog: React.FC = () => {
                 <span>{(post as any).category || 'Blog'}</span>
                 <span className="text-xs text-gray-400">{post.date}</span>
               </div>
-              <h3 className="text-3xl font-black uppercase mb-4 leading-tight group-hover:text-[#FF4B4B] transition-colors text-black">
+              <h3 className="text-3xl font-black uppercase mb-4 leading-tight group-hover:text-[#FF4B4B] transition-colors duration-200 text-black">
                 {post.title}
               </h3>
               <p className="text-gray-700 font-bold mb-8 flex-1">
@@ -224,7 +234,7 @@ const Blog: React.FC = () => {
               </p>
               <div className="flex justify-between items-center">
                 <span className="font-black text-xs uppercase underline decoration-2 text-black">Read Decrypted File</span>
-                <div className="w-10 h-10 bg-black text-white flex items-center justify-center font-black">→</div>
+                <div className="w-10 h-10 bg-black text-white flex items-center justify-center font-black group-hover:bg-[#FF4B4B] transition-colors duration-200">→</div>
               </div>
             </div>
           )) : (
