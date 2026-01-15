@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getPosts, createPost, deletePost, BlogPost } from '../services/blogService';
 import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService'; // Keep achievements mock for now or move it too? Assuming user only asked about blog.
 import { Achievement } from '../types';
+import Toast from './Toast';
 
 const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [tab, setTab] = useState<'blogs' | 'achievements'>('blogs');
@@ -53,12 +54,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setBlogs(posts);
   };
 
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
+
 
   const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -188,16 +184,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     showFeedback("NEW BADGE FORGED! 🏆✨");
   };
 
-  const Toast = () => createPortal(
-    <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[9999] animate-in slide-in-from-top-full duration-500`}>
-      <div className={`border-4 border-black px-10 py-5 shadow-[12px_12px_0px_#000] font-black uppercase text-2xl flex items-center gap-4 ${toast?.type === 'success' ? 'bg-[#FFD600] text-black' : 'bg-red-500 text-white'
-        }`}>
-        <span className="text-4xl">{toast?.type === 'success' ? '⚡' : '🔥'}</span>
-        {toast?.message}
-      </div>
-    </div>,
-    document.body
-  );
+
 
   const DeleteConfirmationModal = () => createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -278,7 +265,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-[#F0F0F0] pt-32 pb-20 px-6">
-      {toast && <Toast />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       {showDeleteModal && <DeleteConfirmationModal />}
       {showWipeModal && <WipeConfirmationModal />}
 
@@ -362,7 +349,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           />
                         </label>
 
-                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black opacity-50">+ IMG URL</button>
+                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#e346d3] text-white px-3 py-1 text-[10px] font-black border-2 border-black ">+ IMG URL</button>
                         <button onClick={() => smartInsert(TEMPLATES.code)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
                         <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
                       </div>

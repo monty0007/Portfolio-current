@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { getPosts, BlogPost } from '../services/blogService';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { getPosts, getPostBySlug, BlogPost } from '../services/blogService';
 import { BlogSection } from '../types';
 
 const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
@@ -65,31 +65,50 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
 const Blog: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { slug } = useParams<{ slug: string }>(); // Get slug from URL
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // Reset view when receiving reset signal from Navbar
   useEffect(() => {
     if (location.state?.reset) {
-      setSelectedPost(null);
+      navigate('/blog', { replace: true });
       window.scrollTo(0, 0);
     }
-  }, [location.state]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  }, [location.state, navigate]);
 
+  // Initial load
   useEffect(() => {
     const fetchBlogs = async () => {
       const posts = await getPosts();
       setBlogs(posts);
+      setLoading(false);
     };
     fetchBlogs();
   }, []);
 
+  // Sync slug with selectedPost
   useEffect(() => {
-    if (selectedPost) {
-      window.scrollTo(0, 0);
-    }
-  }, [selectedPost]);
+    const loadPost = async () => {
+      if (slug) {
+        // Check if we already have it in list to avoid extra request
+        const existing = blogs.find(b => b.slug === slug);
+        if (existing) {
+          setSelectedPost(existing);
+        } else {
+          // Fallback to fetch individual if not in list (deep link)
+          const post = await getPostBySlug(slug);
+          setSelectedPost(post);
+        }
+        window.scrollTo(0, 0);
+      } else {
+        setSelectedPost(null);
+      }
+    };
+    if (!loading) loadPost();
+  }, [slug, blogs, loading]);
 
   const filteredBlogs = blogs.filter(b => {
     const searchLower = searchTerm.toLowerCase();
@@ -106,7 +125,7 @@ const Blog: React.FC = () => {
       <div className="min-h-screen bg-white pt-48 pb-20 px-6 animate-in slide-in-from-bottom duration-500">
         <div className="max-w-4xl mx-auto">
           <button
-            onClick={() => setSelectedPost(null)}
+            onClick={() => navigate('/blog')}
             className="cartoon-btn bg-black text-white px-6 py-3 font-black mb-12 uppercase text-xl"
           >
             ← BACK TO LOGS
@@ -141,7 +160,7 @@ const Blog: React.FC = () => {
               </p>
               <button
                 onClick={() => {
-                  setSelectedPost(null);
+                  navigate('/blog');
                   window.scrollTo(0, 0);
                 }}
                 className="mt-8 cartoon-btn bg-[#FFD600] text-black px-12 py-4 font-black uppercase text-2xl"
@@ -187,7 +206,7 @@ const Blog: React.FC = () => {
           {filteredBlogs.length > 0 ? filteredBlogs.map((post) => (
             <div
               key={post.id}
-              onClick={() => setSelectedPost(post)}
+              onClick={() => navigate(`/blog/${post.slug || post.id}`)}
               className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all cursor-pointer group h-full"
             >
               <div

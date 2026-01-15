@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import Blog from './components/Blog';
 import Admin from './components/Admin';
 import Home from './components/Home';
+import Toast from './components/Toast';
 
 const AppContent: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -56,10 +57,12 @@ const AppContent: React.FC = () => {
       navigate('/admin');
       window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
-      alert("WRONG CODE! Ninja Hattori is watching you! 🥷");
+      setToast({ message: "WRONG CODE! Ninja Hattori is watching you! 🥷", type: "error" });
       setPasswordInput('');
     }
   };
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   return (
     <div className="relative min-h-screen">
@@ -70,6 +73,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home targetSection={targetSection} setTargetSection={setTargetSection} />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/admin" element={<Admin onBack={() => handleNavigate('home')} />} />
         </Routes>
       </main>
@@ -117,6 +121,7 @@ const AppContent: React.FC = () => {
       </div>
 
       <GeminiBot />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };
