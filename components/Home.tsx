@@ -34,7 +34,7 @@ const Home: React.FC<HomeProps> = ({ targetSection, setTargetSection }) => {
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16 pb-0">
                     <div className="w-full md:w-1/3 aspect-square cartoon-border overflow-hidden rotate-[-3deg] hover:rotate-0 transition-transform bg-[#FF4B4B] border-4 border-black shadow-[8px_8px_0px_#000]">
                         <img
-                            src="/weew.png"
+                            src="/weew.jpg"
                             alt="Manish Yadav"
                             className="w-full h-full scale-100"
                         />
