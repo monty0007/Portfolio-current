@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getPosts, createPost, deletePost, BlogPost } from '../services/blogService';
+import { getPosts, createPost, deletePost, updatePost, BlogPost } from '../services/blogService';
 import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService'; // Keep achievements mock for now or move it too? Assuming user only asked about blog.
 import { Achievement } from '../types';
 import Toast from './Toast';
@@ -9,6 +9,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [tab, setTab] = useState<'blogs' | 'achievements'>('blogs');
   const [showManual, setShowManual] = useState(false);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [editingBlogId, setEditingBlogId] = useState<number | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -27,14 +28,20 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     note: '{ "type": "note", "content": "This is a secret gadget tip!" }'
   };
 
-  const [newBlog, setNewBlog] = useState({
+  // Helper to get today's date in YYYY-MM-DD format for date input
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+  const getDefaultBlogState = () => ({
     title: '',
     category: 'Engineering',
     excerpt: '',
     sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
     color: '#FF4B4B',
-    image: ''
+    image: '',
+    date: getTodayDate()
   });
+
+  const [newBlog, setNewBlog] = useState(getDefaultBlogState());
 
   const [newAch, setNewAch] = useState({
     title: '',
@@ -118,33 +125,41 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         return section;
       });
 
-      const result = await createPost({
+      // Store date in ISO format for proper sorting, format for display happens on retrieval
+      const selectedDate = new Date(newBlog.date);
+      // Use ISO format for storage (enables proper date sorting in DB)
+      const isoDate = selectedDate.toISOString();
+
+      const blogData = {
         title: newBlog.title,
         category: newBlog.category,
         excerpt: newBlog.excerpt,
         sections: parsedSections,
         color: newBlog.color,
         content: '',
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        image: newBlog.image, // Use uploaded image
-        readTime: '5 min', // Calculate?
+        date: isoDate,
+        image: newBlog.image,
+        readTime: '5 min',
         tags: [],
         author: 'Manish Yadav'
-      });
+      };
+
+      let result;
+      if (editingBlogId !== null) {
+        // Update existing blog
+        result = await updatePost(editingBlogId, blogData);
+      } else {
+        // Create new blog
+        result = await createPost(blogData);
+      }
 
       if (result.success) {
         await refreshData();
-        setNewBlog({
-          title: '',
-          category: 'Engineering',
-          excerpt: '',
-          sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
-          color: '#FF4B4B',
-          image: ''
-        });
+        setNewBlog(getDefaultBlogState());
         setImageMap({});
         setErrors({});
-        showFeedback("MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
+        setEditingBlogId(null);
+        showFeedback(editingBlogId !== null ? "BLOG UPDATED! ✏️✨" : "MISSION ACCOMPLISHED: Blog Deployed! 🚀✨");
       } else {
         showFeedback(`DEPLOYMENT FAILED! ${result.message} 🛑`, "error");
       }
@@ -152,6 +167,43 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       setErrors({ sectionsJSON: true });
       showFeedback("JSON CRASH! Check your brackets/commas! 🤖💥", "error");
     }
+  };
+
+  const handleEditBlog = (blog: BlogPost) => {
+    setEditingBlogId(blog.id);
+    // Parse the date from the blog (e.g., "JAN 27, 2026") to YYYY-MM-DD format
+    let dateValue = getTodayDate();
+    try {
+      const parsedDate = new Date(blog.date);
+      if (!isNaN(parsedDate.getTime())) {
+        // Use local date components to avoid timezone shift
+        const year = parsedDate.getFullYear();
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getDate()).padStart(2, '0');
+        dateValue = `${year}-${month}-${day}`;
+      }
+    } catch (e) {
+      // Keep today's date if parsing fails
+    }
+
+    setNewBlog({
+      title: blog.title,
+      category: blog.category || 'Engineering',
+      excerpt: blog.excerpt,
+      sectionsJSON: JSON.stringify(blog.sections || [], null, 2),
+      color: blog.color || '#FF4B4B',
+      image: blog.image || '',
+      date: dateValue
+    });
+    setErrors({});
+    showFeedback("Blog loaded for editing! ✏️");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingBlogId(null);
+    setNewBlog(getDefaultBlogState());
+    setErrors({});
+    showFeedback("Edit cancelled! 🔙");
   };
 
   const handleDeleteBlog = (id: number) => {
@@ -292,7 +344,19 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               )}
 
               <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
-                <h2 className="text-2xl font-black uppercase mb-6 text-black">New Blog Forge</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-black uppercase text-black">
+                    {editingBlogId !== null ? '✏️ Edit Blog' : 'New Blog Forge'}
+                  </h2>
+                  {editingBlogId !== null && (
+                    <button
+                      onClick={handleCancelEdit}
+                      className="bg-gray-500 text-white px-4 py-2 font-black uppercase border-2 border-black hover:bg-gray-600"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-6">
                   <div>
                   </div>
@@ -301,13 +365,23 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <input type="text" placeholder="Title..." value={newBlog.title} onChange={e => { setNewBlog({ ...newBlog, title: e.target.value }); setErrors({ ...errors, title: false }) }} className={`w-full p-4 border-4 border-black font-bold text-black ${errors.title ? 'bg-red-50 border-red-500' : ''}`} />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <input type="text" placeholder="Category" value={newBlog.category} onChange={e => setNewBlog({ ...newBlog, category: e.target.value })} className="p-4 border-4 border-black font-bold text-black" />
                     <select value={newBlog.color} onChange={e => setNewBlog({ ...newBlog, color: e.target.value })} className="p-4 border-4 border-black font-bold text-black">
                       <option value="#FF4B4B">Red Alert</option>
                       <option value="#00A1FF">Sonic Blue</option>
                       <option value="#FFD600">Golden Yellow</option>
                     </select>
+                    <div>
+                      <input
+                        type="date"
+                        value={newBlog.date}
+                        onChange={e => setNewBlog({ ...newBlog, date: e.target.value })}
+                        onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+                        className="w-full p-4 border-4 border-black font-bold text-black bg-white shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00A1FF]"
+                        title="Blog publish date - controls ordering (latest first)"
+                      />
+                    </div>
                   </div>
 
                   <textarea placeholder="Quick Excerpt..." value={newBlog.excerpt} onChange={e => setNewBlog({ ...newBlog, excerpt: e.target.value })} className="w-full p-4 border-4 border-black font-bold h-20 text-black" />
@@ -361,7 +435,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     />
                   </div>
 
-                  <button onClick={handleSaveBlog} className="cartoon-btn w-full bg-[#FFD600] text-black py-5 font-black uppercase text-2xl shadow-[10px_10px_0px_#000]">🚀 BROADCAST TO LOGS</button>
+                  <button onClick={handleSaveBlog} className="cartoon-btn w-full bg-[#FFD600] text-black py-5 font-black uppercase text-2xl shadow-[10px_10px_0px_#000]">
+                    {editingBlogId !== null ? '💾 UPDATE BLOG' : '🚀 BROADCAST TO LOGS'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -370,9 +446,29 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4 text-black">Active Logs</h3>
               <div className="overflow-y-auto max-h-[800px] space-y-3 pr-2 custom-scrollbar">
                 {blogs.map(blog => (
-                  <div key={blog.id} className="bg-white border-4 border-black p-4 flex justify-between items-center shadow-[4px_4px_0px_#000]">
-                    <div className="truncate font-black uppercase text-sm text-black">{blog.title}</div>
-                    <button onClick={() => handleDeleteBlog(blog.id)} className="w-8 h-8 bg-red-100 text-red-600 border-2 border-black font-black">×</button>
+                  <div key={blog.id} className={`bg-white border-4 border-black p-4 shadow-[4px_4px_0px_#000] ${editingBlogId === blog.id ? 'ring-4 ring-yellow-400' : ''}`}>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-black uppercase text-sm text-black">{blog.title}</div>
+                        <div className="text-xs text-gray-500 mt-1">{blog.date}</div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleEditBlog(blog)}
+                          className="px-3 py-1 bg-[#00A1FF] text-white border-2 border-black font-black text-xs uppercase hover:bg-blue-400 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
+                          title="Edit blog"
+                        >
+                          EDIT
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBlog(blog.id)}
+                          className="w-8 h-8 bg-red-500 text-white border-2 border-black font-black hover:bg-red-600 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
+                          title="Delete blog"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

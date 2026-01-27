@@ -71,10 +71,55 @@ export const deletePost = async (id: number): Promise<boolean> => {
     }
 };
 
+export const updatePost = async (id: number, post: Partial<Omit<BlogPost, 'id' | 'slug'>>): Promise<{ success: boolean; message: string }> => {
+    if (isMock) {
+        return { success: false, message: "DB not connected! Add VITE_TURSO_DATABASE_URL to .env" };
+    }
+
+    try {
+        const sectionsStr = post.sections ? JSON.stringify(post.sections) : undefined;
+        const tagsStr = post.tags ? JSON.stringify(post.tags) : undefined;
+
+        await db.execute({
+            sql: `UPDATE posts SET 
+                title = COALESCE(?, title),
+                created_at = COALESCE(?, created_at),
+                excerpt = COALESCE(?, excerpt),
+                category = COALESCE(?, category),
+                color = COALESCE(?, color),
+                sections = COALESCE(?, sections),
+                content = COALESCE(?, content),
+                author = COALESCE(?, author),
+                read_time = COALESCE(?, read_time),
+                image_url = COALESCE(?, image_url),
+                tags = COALESCE(?, tags)
+            WHERE id = ?`,
+            args: [
+                post.title ?? null,
+                post.date ?? null,
+                post.excerpt ?? null,
+                post.category ?? null,
+                post.color ?? null,
+                sectionsStr ?? null,
+                post.content ?? null,
+                post.author ?? null,
+                post.readTime ?? null,
+                post.image ?? null,
+                tagsStr ?? null,
+                id
+            ]
+        });
+        return { success: true, message: "Post updated successfully!" };
+    } catch (error: any) {
+        console.error("Failed to update post:", error);
+        return { success: false, message: error.message || "Failed to update post (SQL Error)" };
+    }
+};
+
 // Mock interface for now matching current blog structure, will map DB results to this
 export const getPosts = async (): Promise<BlogPost[]> => {
     try {
-        const result = await db.execute("SELECT * FROM posts ORDER BY id DESC");
+        const result = await db.execute("SELECT * FROM posts");
 
         // If DB is empty or table doesn't exist, return empty or mock
         // This is a safety check for the first run before migration
@@ -83,14 +128,43 @@ export const getPosts = async (): Promise<BlogPost[]> => {
             return [];
         }
 
-        return result.rows.map(row => ({
+        // Helper to parse date string to timestamp for sorting
+        const parseDateToTimestamp = (dateStr: string): number => {
+            try {
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    return date.getTime();
+                }
+            } catch (e) {
+                // Fall through
+            }
+            return 0; // Put unparseable dates at the end
+        };
+
+        // Helper to format date for display
+        const formatDateForDisplay = (dateStr: string): string => {
+            try {
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    // Convert month to uppercase: "Jan 14, 2026" -> "JAN 14, 2026"
+                    return formatted.replace(/^[A-Za-z]+/, (match) => match.toUpperCase());
+                }
+            } catch (e) {
+                // Fall through to return original string
+            }
+            return dateStr; // Return as-is if parsing fails (legacy format)
+        };
+
+        const posts = result.rows.map(row => ({
             id: Number(row.id),
             slug: String(row.slug),
             title: String(row.title),
             excerpt: String(row.excerpt),
             content: String(row.content),
             author: String(row.author),
-            date: String(row.created_at), // Adjust column name as needed
+            date: formatDateForDisplay(String(row.created_at)),
+            rawDate: String(row.created_at), // Keep raw date for sorting
             readTime: String(row.read_time),
             image: String(row.image_url),
             tags: parseTags(row.tags),
@@ -98,6 +172,16 @@ export const getPosts = async (): Promise<BlogPost[]> => {
             color: String(row.color || ''),
             sections: parseTags(row.sections) // Using same parser for JSON array
         }));
+
+        // Sort by date descending (newest first) using parsed timestamps
+        posts.sort((a, b) => {
+            const timeA = parseDateToTimestamp(a.rawDate);
+            const timeB = parseDateToTimestamp(b.rawDate);
+            return timeB - timeA; // Descending order
+        });
+
+        // Remove rawDate before returning (it was only for sorting)
+        return posts.map(({ rawDate, ...rest }) => rest);
     } catch (error) {
         console.error("Failed to fetch posts:", error);
         return [];
@@ -105,6 +189,21 @@ export const getPosts = async (): Promise<BlogPost[]> => {
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
+    // Helper to format date for display  
+    const formatDateForDisplay = (dateStr: string): string => {
+        try {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                // Convert month to uppercase: "Jan 14, 2026" -> "JAN 14, 2026"
+                return formatted.replace(/^[A-Za-z]+/, (match) => match.toUpperCase());
+            }
+        } catch (e) {
+            // Fall through to return original string
+        }
+        return dateStr;
+    };
+
     try {
         const result = await db.execute({
             sql: "SELECT * FROM posts WHERE slug = ?",
@@ -121,7 +220,7 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
             excerpt: String(row.excerpt),
             content: String(row.content),
             author: String(row.author),
-            date: String(row.created_at),
+            date: formatDateForDisplay(String(row.created_at)),
             readTime: String(row.read_time),
             image: String(row.image_url),
             tags: parseTags(row.tags),
