@@ -11,6 +11,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [editingBlogId, setEditingBlogId] = useState<number | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [editingAchId, setEditingAchId] = useState<string | null>(null);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -230,10 +231,42 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       showFeedback("Fill all fields to forge this badge! 🛑", "error");
       return;
     }
-    const ach: Achievement = { ...newAch, id: Date.now().toString() };
-    setAchievements(addAchievement(ach));
+
+    if (editingAchId !== null) {
+      // Update existing achievement
+      const updatedAchievements = achievements.map(a =>
+        a.id === editingAchId ? { ...newAch, id: editingAchId } : a
+      );
+      setAchievements(updatedAchievements);
+      localStorage.setItem('achievements', JSON.stringify(updatedAchievements));
+      setEditingAchId(null);
+      setNewAch({ title: '', issuer: '', date: '2024', icon: '🏆', color: '#FFD600' });
+      showFeedback("BADGE UPDATED! ✏️✨");
+    } else {
+      // Create new achievement
+      const ach: Achievement = { ...newAch, id: Date.now().toString() };
+      setAchievements(addAchievement(ach));
+      setNewAch({ title: '', issuer: '', date: '2024', icon: '🏆', color: '#FFD600' });
+      showFeedback("NEW BADGE FORGED! 🏆✨");
+    }
+  };
+
+  const handleEditAch = (ach: Achievement) => {
+    setEditingAchId(ach.id);
+    setNewAch({
+      title: ach.title,
+      issuer: ach.issuer,
+      date: ach.date,
+      icon: ach.icon,
+      color: ach.color
+    });
+    showFeedback("Badge loaded for editing! ✏️");
+  };
+
+  const handleCancelEditAch = () => {
+    setEditingAchId(null);
     setNewAch({ title: '', issuer: '', date: '2024', icon: '🏆', color: '#FFD600' });
-    showFeedback("NEW BADGE FORGED! 🏆✨");
+    showFeedback("Edit cancelled! 🔙");
   };
 
 
@@ -478,7 +511,19 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 text-black">
             <div className="lg:col-span-2 space-y-8">
               <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
-                <h2 className="text-2xl font-black uppercase mb-6">Badge Forge</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-black uppercase">
+                    {editingAchId !== null ? '✏️ Edit Badge' : 'Badge Forge'}
+                  </h2>
+                  {editingAchId !== null && (
+                    <button
+                      onClick={handleCancelEditAch}
+                      className="bg-gray-500 text-white px-4 py-2 font-black uppercase border-2 border-black hover:bg-gray-600"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-4">
                   <input type="text" placeholder="Title..." value={newAch.title} onChange={e => setNewAch({ ...newAch, title: e.target.value })} className="w-full p-4 border-4 border-black font-bold" />
                   <input type="text" placeholder="Issuer..." value={newAch.issuer} onChange={e => setNewAch({ ...newAch, issuer: e.target.value })} className="w-full p-4 border-4 border-black font-bold" />
@@ -491,7 +536,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <option value="#FF4B4B">Red</option>
                     </select>
                   </div>
-                  <button onClick={handleSaveAch} className="cartoon-btn w-full bg-[#6B4BFF] text-white py-4 font-black uppercase text-xl shadow-[8px_8px_0px_#000]">FORGE BADGE</button>
+                  <button onClick={handleSaveAch} className="cartoon-btn w-full bg-[#6B4BFF] text-white py-4 font-black uppercase text-xl shadow-[8px_8px_0px_#000]">
+                    {editingAchId !== null ? '💾 UPDATE BADGE' : 'FORGE BADGE'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -499,18 +546,33 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4">Earned Badges</h3>
               <div className="overflow-y-auto max-h-[800px] space-y-3">
                 {achievements.map(ach => (
-                  <div key={ach.id} className="bg-white border-4 border-black p-4 flex justify-between items-center gap-4 shadow-[4px_4px_0px_#000]">
-                    <div className="flex items-center gap-3 font-black uppercase text-sm min-w-0 flex-1">
-                      <span className="text-xl flex-shrink-0">{ach.icon}</span>
-                      <span className="truncate">{ach.title}</span>
+                  <div key={ach.id} className={`bg-white border-4 border-black p-4 shadow-[4px_4px_0px_#000] ${editingAchId === ach.id ? 'ring-4 ring-yellow-400' : ''}`}>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="flex items-center gap-3 font-black uppercase text-sm min-w-0 flex-1">
+                        <span className="text-xl flex-shrink-0">{ach.icon}</span>
+                        <div className="min-w-0">
+                          <div className="truncate">{ach.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">{ach.issuer} • {ach.date}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleEditAch(ach)}
+                          className="px-3 py-1 bg-[#00A1FF] text-white border-2 border-black font-black text-xs uppercase hover:bg-blue-400 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
+                          title="Edit badge"
+                        >
+                          EDIT
+                        </button>
+                        <button
+                          aria-label="Delete badge"
+                          onClick={() => setAchievements(deleteAchievement(ach.id))}
+                          className="w-8 h-8 bg-red-500 text-white border-2 border-black font-black hover:bg-red-600 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
+                          title="Delete badge"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      aria-label="Delete badge"
-                      onClick={() => setAchievements(deleteAchievement(ach.id))}
-                      className="w-10 h-10 bg-red-500 text-white border-2 border-black font-black text-lg flex-shrink-0 hover:bg-red-600 transition-colors"
-                    >
-                      ×
-                    </button>
                   </div>
                 ))}
               </div>
