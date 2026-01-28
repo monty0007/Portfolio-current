@@ -321,28 +321,40 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     document.body
   );
 
-  const BlueprintManual = () => (
-    <div className="bg-[#003366] border-4 border-black p-6 shadow-[10px_10px_0px_#00A1FF] text-white relative mb-8">
-      <div className="relative z-10">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-black uppercase italic tracking-tighter decoration-yellow-400 underline">SECRET_MANUAL.pdf</h3>
-          <button onClick={() => setShowManual(false)} className="bg-red-500 text-white px-3 py-1 border-2 border-black font-black">CLOSE</button>
-        </div>
-        <div className="space-y-4 font-mono text-xs max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          {Object.entries(TEMPLATES).map(([name, code]) => (
-            <div key={name} className="bg-black/40 p-3 border border-white/20 rounded">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-yellow-400 font-black uppercase">{name} part</p>
-                <button
-                  onClick={() => handleCopyTemplate(code)}
-                  className="bg-white text-black px-3 py-1 text-[10px] font-black uppercase hover:bg-yellow-400 border-2 border-black"
-                >
-                  COPY
-                </button>
-              </div>
-              <pre className="whitespace-pre-wrap opacity-70">{code}</pre>
+  const SlideOutManual = () => (
+    <div className="fixed left-0 top-1/2 -translate-y-1/2 z-50 group">
+      {/* Tab Handle */}
+      <div className="flex">
+        {/* The sliding panel */}
+        <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[400px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
+          <div className="w-[400px] p-6 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <h3 className="text-xl font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-4">SECRET_MANUAL.pdf</h3>
+            <p className="text-xs text-white/60 mb-4">Click to copy templates for your blog sections</p>
+            <div className="space-y-3 font-mono text-xs">
+              {Object.entries(TEMPLATES).map(([name, code]) => (
+                <div key={name} className="bg-black/40 p-3 border border-white/20 rounded hover:border-yellow-400/50 transition-colors">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-yellow-400 font-black uppercase text-[11px]">{name}</p>
+                    <button
+                      onClick={() => handleCopyTemplate(code)}
+                      className="bg-white text-black px-2 py-0.5 text-[10px] font-black uppercase hover:bg-yellow-400 border-2 border-black transition-colors"
+                    >
+                      COPY
+                    </button>
+                  </div>
+                  <pre className="whitespace-pre-wrap opacity-70 text-[10px] leading-relaxed">{code}</pre>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* The visible tab handle */}
+        <div className="bg-[#003366] border-4 border-l-0 border-black py-6 px-2 cursor-pointer flex items-center shadow-[4px_4px_0px_#000] group-hover:bg-[#004080] transition-colors rounded-r-lg">
+          <div className="writing-vertical text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
+            <span className="text-lg">📖</span>
+            <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>MANUAL</span>
+          </div>
         </div>
       </div>
     </div>
@@ -367,14 +379,11 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
 
+        {tab === 'blogs' && <SlideOutManual />}
+
         {tab === 'blogs' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
-              {!showManual ? (
-                <button onClick={() => setShowManual(true)} className="w-full bg-[#00A1FF] text-white py-4 font-black uppercase border-4 border-black shadow-[6px_6px_0px_#000] hover:scale-105 transition-transform">📖 READ THE SECRET MANUAL</button>
-              ) : (
-                <BlueprintManual />
-              )}
 
               <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
                 <div className="flex justify-between items-center mb-6">
