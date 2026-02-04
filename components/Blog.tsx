@@ -182,8 +182,26 @@ const Blog: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9E6] pt-48 pb-20 px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#FFF9E6] pt-48 pb-20 px-6 relative overflow-hidden">
+      {/* Decorative cross pattern background */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: `
+          linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: '60px 60px'
+      }} />
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Scattered plus signs */}
+        <div className="absolute top-20 left-[10%] text-6xl text-black/5 font-black select-none">+</div>
+        <div className="absolute top-40 right-[15%] text-8xl text-black/5 font-black select-none rotate-12">+</div>
+        <div className="absolute top-[60%] left-[5%] text-7xl text-black/5 font-black select-none -rotate-6">+</div>
+        <div className="absolute top-[30%] right-[8%] text-5xl text-black/5 font-black select-none rotate-45">+</div>
+        <div className="absolute bottom-40 left-[20%] text-9xl text-black/5 font-black select-none">+</div>
+        <div className="absolute bottom-20 right-[25%] text-6xl text-black/5 font-black select-none -rotate-12">+</div>
+        <div className="absolute top-[45%] left-[50%] text-8xl text-black/5 font-black select-none rotate-6">+</div>
+      </div>
+      <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
           <header>
             <button
