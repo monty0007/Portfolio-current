@@ -99,12 +99,19 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
           >
             Games
           </a>
-          <button
-            onClick={() => onNavigate('blog')}
+          <a
+            href="/blog"
+            onClick={(e) => {
+              // Allow middle-click and ctrl/cmd+click to work naturally
+              if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                onNavigate('blog');
+              }
+            }}
             className={`cursor-pointer hover:text-green-500 transition-colors uppercase font-black ${currentView === 'blog' ? 'text-green-500 underline decoration-4' : 'text-black'}`}
           >
             Blog
-          </button>
+          </a>
           <a
             href="#contact-banner"
             onClick={(e) => handleLinkClick(e, 'contact-banner')}

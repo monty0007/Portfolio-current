@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getPosts, createPost, deletePost, updatePost, BlogPost } from '../services/blogService';
 import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService'; // Keep achievements mock for now or move it too? Assuming user only asked about blog.
@@ -19,14 +19,105 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [imageMap, setImageMap] = useState<{ [key: string]: string }>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastCursorPositionRef = useRef<{ start: number; end: number } | null>(null);
 
+  // Markdown-style templates
   const TEMPLATES = {
-    heading: '{ "type": "heading", "content": "BIG TITLE HERE" }',
-    subheading: '{ "type": "subheading", "content": "Small section title..." }',
-    paragraph: '{ "type": "paragraph", "content": "Once upon a time in the 22nd century..." }',
-    image: '{ "type": "image", "content": "", "caption": "Add a caption" }',
-    code: '{ "type": "code", "content": "console.log(\'Action Bastion!\');", "language": "javascript" }',
-    note: '{ "type": "note", "content": "This is a secret gadget tip!" }'
+    heading: '# BIG TITLE HERE',
+    subheading: '## Small section title...',
+    paragraph: 'Once upon a time in the 22nd century...',
+    image: '[IMAGE: url_here | Add a caption]',
+    code: '```javascript\nconsole.log(\'Action Bastion!\');\n```',
+    note: '> NOTE: This is a secret gadget tip!'
+  };
+
+  // Convert markdown format to JSON sections
+  const markdownToSections = (markdown: string): any[] => {
+    const sections: any[] = [];
+    const lines = markdown.split('\n');
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        i++;
+        continue;
+      }
+
+      // Heading: # Title
+      if (trimmed.startsWith('# ') && !trimmed.startsWith('## ')) {
+        sections.push({ type: 'heading', content: trimmed.slice(2).trim() });
+        i++;
+      }
+      // Subheading: ## Title
+      else if (trimmed.startsWith('## ')) {
+        sections.push({ type: 'subheading', content: trimmed.slice(3).trim() });
+        i++;
+      }
+      // Image: [IMAGE: url | caption]
+      else if (trimmed.startsWith('[IMAGE:') && trimmed.endsWith(']')) {
+        const inner = trimmed.slice(7, -1);
+        const pipeIndex = inner.indexOf('|');
+        if (pipeIndex !== -1) {
+          const url = inner.slice(0, pipeIndex).trim();
+          const caption = inner.slice(pipeIndex + 1).trim();
+          sections.push({ type: 'image', content: url, caption });
+        } else {
+          sections.push({ type: 'image', content: inner.trim(), caption: '' });
+        }
+        i++;
+      }
+      // Code block: ```language ... ```
+      else if (trimmed.startsWith('```')) {
+        const language = trimmed.slice(3).trim() || 'javascript';
+        const codeLines: string[] = [];
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          codeLines.push(lines[i]);
+          i++;
+        }
+        sections.push({ type: 'code', content: codeLines.join('\n'), language });
+        i++; // skip closing ```
+      }
+      // Note: > NOTE: content
+      else if (trimmed.startsWith('> NOTE:') || trimmed.startsWith('>NOTE:')) {
+        const content = trimmed.replace(/^>\s*NOTE:\s*/i, '').trim();
+        sections.push({ type: 'note', content });
+        i++;
+      }
+      // Regular paragraph
+      else {
+        sections.push({ type: 'paragraph', content: trimmed });
+        i++;
+      }
+    }
+
+    return sections;
+  };
+
+  // Convert JSON sections to markdown format
+  const sectionsToMarkdown = (sections: any[]): string => {
+    return sections.map((section: any) => {
+      switch (section.type) {
+        case 'heading':
+          return `# ${section.content}`;
+        case 'subheading':
+          return `## ${section.content}`;
+        case 'paragraph':
+          return section.content;
+        case 'image':
+          return `[IMAGE: ${section.content} | ${section.caption || 'Caption'}]`;
+        case 'code':
+          return `\`\`\`${section.language || 'javascript'}\n${section.content}\n\`\`\``;
+        case 'note':
+          return `> NOTE: ${section.content}`;
+        default:
+          return section.content || '';
+      }
+    }).join('\n\n');
   };
 
   // Helper to get today's date in YYYY-MM-DD format for date input
@@ -36,7 +127,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     title: '',
     category: 'Engineering',
     excerpt: '',
-    sectionsJSON: '[\n  ' + TEMPLATES.heading + ',\n  ' + TEMPLATES.paragraph + '\n]',
+    sectionsJSON: TEMPLATES.heading + '\n\n' + TEMPLATES.paragraph,
     color: '#FF4B4B',
     image: '',
     date: getTodayDate()
@@ -73,22 +164,61 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     showFeedback("Template Copied! 📋");
   };
 
-  const smartInsert = (template: string) => {
-    const current = newBlog.sectionsJSON.trim();
-    let updated = '';
+  const smartInsert = (template: string, useLastPosition: boolean = false) => {
+    const textarea = textareaRef.current;
+    const current = newBlog.sectionsJSON;
 
-    if (current === '' || current === '[]' || current === '[ ]') {
-      updated = '[\n  ' + template + '\n]';
-    } else if (current.endsWith(']')) {
-      const base = current.substring(0, current.lastIndexOf(']')).trim();
-      const needsComma = base.length > 1 && !base.endsWith(',');
-      updated = base + (needsComma ? ',\n  ' : '\n  ') + template + '\n]';
-    } else {
-      updated = '[\n  ' + template + '\n]';
+    // Determine cursor position: either current focus or saved last position
+    let start: number | null = null;
+    let end: number | null = null;
+
+    if (textarea && document.activeElement === textarea) {
+      start = textarea.selectionStart;
+      end = textarea.selectionEnd;
+    } else if (useLastPosition && lastCursorPositionRef.current) {
+      start = lastCursorPositionRef.current.start;
+      end = lastCursorPositionRef.current.end;
     }
 
-    setNewBlog({ ...newBlog, sectionsJSON: updated });
-    setErrors({ ...errors, sectionsJSON: false });
+    // If we have a cursor position, insert at that location
+    if (start !== null && end !== null) {
+      const before = current.substring(0, start);
+      const after = current.substring(end);
+
+      // For markdown, just add newlines around the template
+      const needsNewlineBefore = before.length > 0 && !before.endsWith('\n\n') && !before.endsWith('\n');
+      const needsNewlineAfter = after.length > 0 && !after.startsWith('\n\n') && !after.startsWith('\n');
+
+      const insertText = (needsNewlineBefore ? '\n\n' : '') + template + (needsNewlineAfter ? '\n\n' : '');
+      const updated = before + insertText + after;
+
+      setNewBlog({ ...newBlog, sectionsJSON: updated });
+      setErrors({ ...errors, sectionsJSON: false });
+
+      // Restore cursor position after the inserted text
+      if (textarea) {
+        setTimeout(() => {
+          const newPos = start! + insertText.length;
+          textarea.focus();
+          textarea.setSelectionRange(newPos, newPos);
+          // Update the saved position
+          lastCursorPositionRef.current = { start: newPos, end: newPos };
+        }, 0);
+      }
+    } else {
+      // Fallback: append at the end (simple markdown)
+      const trimmed = current.trim();
+      let updated = '';
+
+      if (trimmed === '') {
+        updated = template;
+      } else {
+        updated = trimmed + '\n\n' + template;
+      }
+
+      setNewBlog({ ...newBlog, sectionsJSON: updated });
+      setErrors({ ...errors, sectionsJSON: false });
+    }
   };
 
   const clearEditor = () => {
@@ -96,7 +226,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const confirmWipe = () => {
-    setNewBlog({ ...newBlog, sectionsJSON: '[\n  \n]' });
+    setNewBlog({ ...newBlog, sectionsJSON: '' });
     setShowWipeModal(false);
     showFeedback("Board Wiped Clean! 🧼");
   };
@@ -113,7 +243,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     try {
-      let parsedSections = JSON.parse(newBlog.sectionsJSON);
+      // Parse markdown to sections
+      let parsedSections = markdownToSections(newBlog.sectionsJSON);
 
       // Resolve Image Tokens
       parsedSections = parsedSections.map((section: any) => {
@@ -187,11 +318,28 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       // Keep today's date if parsing fails
     }
 
+    // Process sections to replace base64 images with tokens for cleaner editing
+    const sections = blog.sections || [];
+    const newImageMap: { [key: string]: string } = {};
+    let imgCounter = 1;
+
+    const processedSections = sections.map((section: any) => {
+      if (section.type === 'image' && section.content && section.content.startsWith('data:image')) {
+        // This is a base64 image - replace with a token
+        const token = `IMG_EXISTING_${imgCounter++}`;
+        newImageMap[token] = section.content;
+        return { ...section, content: `{{${token}}}` };
+      }
+      return section;
+    });
+
+    setImageMap(newImageMap);
+
     setNewBlog({
       title: blog.title,
       category: blog.category || 'Engineering',
       excerpt: blog.excerpt,
-      sectionsJSON: JSON.stringify(blog.sections || [], null, 2),
+      sectionsJSON: sectionsToMarkdown(processedSections),
       color: blog.color || '#FF4B4B',
       image: blog.image || '',
       date: dateValue
@@ -325,35 +473,59 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="fixed left-0 top-1/2 -translate-y-1/2 z-50 group">
       {/* Tab Handle */}
       <div className="flex">
-        {/* The sliding panel */}
-        <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[400px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
-          <div className="w-[400px] p-6 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
-            <h3 className="text-xl font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-4">SECRET_MANUAL.pdf</h3>
-            <p className="text-xs text-white/60 mb-4">Click to copy templates for your blog sections</p>
-            <div className="space-y-3 font-mono text-xs">
-              {Object.entries(TEMPLATES).map(([name, code]) => (
-                <div key={name} className="bg-black/40 p-3 border border-white/20 rounded hover:border-yellow-400/50 transition-colors">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-yellow-400 font-black uppercase text-[11px]">{name}</p>
-                    <button
-                      onClick={() => handleCopyTemplate(code)}
-                      className="bg-white text-black px-2 py-0.5 text-[10px] font-black uppercase hover:bg-yellow-400 border-2 border-black transition-colors"
-                    >
-                      COPY
-                    </button>
-                  </div>
-                  <pre className="whitespace-pre-wrap opacity-70 text-[10px] leading-relaxed">{code}</pre>
-                </div>
-              ))}
+        {/* The sliding panel - syntax reference */}
+        <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[300px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
+          <div className="w-[300px] p-4 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <h3 className="text-sm font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-3">📖 Syntax Guide</h3>
+            <div className="space-y-3 text-xs">
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Heading</p>
+                <p className="text-gray-300 mb-1">Big section title</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded"># Your Title</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Subheading</p>
+                <p className="text-gray-300 mb-1">Smaller section title</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded">## Your Subheading</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Paragraph</p>
+                <p className="text-gray-300 mb-1">Regular text content</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded">Just write your text...</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Image</p>
+                <p className="text-gray-300 mb-1">Add image with caption</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded text-[10px]">[IMAGE: url | caption]</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Code Block</p>
+                <p className="text-gray-300 mb-1">Syntax highlighted code</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded text-[10px] whitespace-pre">{`\`\`\`javascript
+your code here
+\`\`\``}</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Note</p>
+                <p className="text-gray-300 mb-1">Highlighted tip/note</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded">{`> NOTE: Your tip here`}</code>
+              </div>
+
             </div>
           </div>
         </div>
 
         {/* The visible tab handle */}
-        <div className="bg-[#003366] border-4 border-l-0 border-black py-6 px-2 cursor-pointer flex items-center shadow-[4px_4px_0px_#000] group-hover:bg-[#004080] transition-colors rounded-r-lg">
-          <div className="writing-vertical text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
-            <span className="text-lg">📖</span>
-            <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>MANUAL</span>
+        <div className="bg-[#003366] border-2 border-l-0 border-black py-2 px-1 cursor-pointer flex items-center shadow-[2px_2px_0px_#000] group-hover:bg-[#004080] transition-colors rounded-r-md">
+          <div className="writing-vertical text-white font-black text-[10px] uppercase tracking-wider flex items-center gap-0.5">
+            <span className="text-xs">📖</span>
+            <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>HELP</span>
           </div>
         </div>
       </div>
@@ -432,9 +604,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                       <p className="text-xs font-black uppercase text-black">The Assembly Board</p>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => smartInsert(TEMPLATES.heading)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
-                        <button onClick={() => smartInsert(TEMPLATES.subheading)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
-                        <button onClick={() => smartInsert(TEMPLATES.paragraph)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
+                        <button onClick={() => smartInsert(TEMPLATES.heading, true)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
+                        <button onClick={() => smartInsert(TEMPLATES.subheading, true)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
+                        <button onClick={() => smartInsert(TEMPLATES.paragraph, true)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
 
                         {/* Image Uploader for Sections */}
                         <label className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black cursor-pointer hover:bg-blue-400">
@@ -455,7 +627,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 if (typeof reader.result === 'string') {
                                   const imgId = `IMG_${Date.now()}`;
                                   setImageMap(prev => ({ ...prev, [imgId]: reader.result as string }));
-                                  smartInsert(`{ "type": "image", "content": "{{${imgId}}}", "caption": "Uploaded Image" }`);
+                                  smartInsert(`[IMAGE: {{${imgId}}} | Uploaded Image]`, true);
                                 }
                               };
                               reader.readAsDataURL(file);
@@ -465,14 +637,23 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           />
                         </label>
 
-                        <button onClick={() => smartInsert(TEMPLATES.image)} className="bg-[#e346d3] text-white px-3 py-1 text-[10px] font-black border-2 border-black ">+ IMG URL</button>
-                        <button onClick={() => smartInsert(TEMPLATES.code)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.image, true)} className="bg-[#e346d3] text-white px-3 py-1 text-[10px] font-black border-2 border-black ">+ IMG URL</button>
+                        <button onClick={() => smartInsert(TEMPLATES.code, true)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.note, true)} className="bg-[#6B4BFF] text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ NOTE</button>
                         <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
                       </div>
                     </div>
                     <textarea
+                      ref={textareaRef}
                       value={newBlog.sectionsJSON}
                       onChange={e => { setNewBlog({ ...newBlog, sectionsJSON: e.target.value }); setErrors({ ...errors, sectionsJSON: false }) }}
+                      onBlur={(e) => {
+                        // Save cursor position when textarea loses focus
+                        lastCursorPositionRef.current = {
+                          start: e.target.selectionStart,
+                          end: e.target.selectionEnd
+                        };
+                      }}
                       className="w-full p-4 border-2 border-black font-mono text-sm h-72 text-black bg-white"
                     />
                   </div>

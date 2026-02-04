@@ -63,7 +63,7 @@ const GeminiBot: React.FC = () => {
           <div className="bg-[#FFD600] p-4 border-b-4 border-black flex justify-between items-center">
             <h3 className="font-black uppercase tracking-wider flex items-center gap-2">
               <span className="w-4 h-4 bg-red-500 rounded-full border-2 border-black"></span>
-              POCKET ASSISTANT
+              LUNA
             </h3>
             <div className="flex gap-2">
               <button onClick={handleClear} aria-label="Clear chat history" className="font-bold text-xs bg-black text-white px-2 py-1 hover:bg-red-500 uppercase">Clear</button>
