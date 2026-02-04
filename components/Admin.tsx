@@ -23,102 +23,17 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const lastCursorPositionRef = useRef<{ start: number; end: number } | null>(null);
 
   // Markdown-style templates
+  // JSON Templates
   const TEMPLATES = {
-    heading: '# BIG TITLE HERE',
-    subheading: '## Small section title...',
-    paragraph: 'Once upon a time in the 22nd century...',
-    image: '[IMAGE: url_here | Add a caption]',
-    code: '```javascript\nconsole.log(\'Action Bastion!\');\n```',
-    note: '> NOTE: This is a secret gadget tip!'
+    heading: '{\n  "type": "heading",\n  "content": "BIG TITLE HERE"\n}',
+    subheading: '{\n  "type": "subheading",\n  "content": "Small section title..."\n}',
+    paragraph: '{\n  "type": "paragraph",\n  "content": "Once upon a time in the 22nd century..."\n}',
+    image: '{\n  "type": "image",\n  "content": "url_here",\n  "caption": "Add a caption"\n}',
+    code: '{\n  "type": "code",\n  "content": "console.log(\'Action Bastion!\');",\n  "language": "javascript"\n}',
+    note: '{\n  "type": "note",\n  "content": "This is a secret gadget tip!"\n}'
   };
 
-  // Convert markdown format to JSON sections
-  const markdownToSections = (markdown: string): any[] => {
-    const sections: any[] = [];
-    const lines = markdown.split('\n');
-    let i = 0;
 
-    while (i < lines.length) {
-      const line = lines[i];
-      const trimmed = line.trim();
-
-      if (!trimmed) {
-        i++;
-        continue;
-      }
-
-      // Heading: # Title
-      if (trimmed.startsWith('# ') && !trimmed.startsWith('## ')) {
-        sections.push({ type: 'heading', content: trimmed.slice(2).trim() });
-        i++;
-      }
-      // Subheading: ## Title
-      else if (trimmed.startsWith('## ')) {
-        sections.push({ type: 'subheading', content: trimmed.slice(3).trim() });
-        i++;
-      }
-      // Image: [IMAGE: url | caption]
-      else if (trimmed.startsWith('[IMAGE:') && trimmed.endsWith(']')) {
-        const inner = trimmed.slice(7, -1);
-        const pipeIndex = inner.indexOf('|');
-        if (pipeIndex !== -1) {
-          const url = inner.slice(0, pipeIndex).trim();
-          const caption = inner.slice(pipeIndex + 1).trim();
-          sections.push({ type: 'image', content: url, caption });
-        } else {
-          sections.push({ type: 'image', content: inner.trim(), caption: '' });
-        }
-        i++;
-      }
-      // Code block: ```language ... ```
-      else if (trimmed.startsWith('```')) {
-        const language = trimmed.slice(3).trim() || 'javascript';
-        const codeLines: string[] = [];
-        i++;
-        while (i < lines.length && !lines[i].trim().startsWith('```')) {
-          codeLines.push(lines[i]);
-          i++;
-        }
-        sections.push({ type: 'code', content: codeLines.join('\n'), language });
-        i++; // skip closing ```
-      }
-      // Note: > NOTE: content
-      else if (trimmed.startsWith('> NOTE:') || trimmed.startsWith('>NOTE:')) {
-        const content = trimmed.replace(/^>\s*NOTE:\s*/i, '').trim();
-        sections.push({ type: 'note', content });
-        i++;
-      }
-      // Regular paragraph
-      else {
-        sections.push({ type: 'paragraph', content: trimmed });
-        i++;
-      }
-    }
-
-    return sections;
-  };
-
-  // Convert JSON sections to markdown format
-  const sectionsToMarkdown = (sections: any[]): string => {
-    return sections.map((section: any) => {
-      switch (section.type) {
-        case 'heading':
-          return `# ${section.content}`;
-        case 'subheading':
-          return `## ${section.content}`;
-        case 'paragraph':
-          return section.content;
-        case 'image':
-          return `[IMAGE: ${section.content} | ${section.caption || 'Caption'}]`;
-        case 'code':
-          return `\`\`\`${section.language || 'javascript'}\n${section.content}\n\`\`\``;
-        case 'note':
-          return `> NOTE: ${section.content}`;
-        default:
-          return section.content || '';
-      }
-    }).join('\n\n');
-  };
 
   // Helper to get today's date in YYYY-MM-DD format for date input
   const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -127,7 +42,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     title: '',
     category: 'Engineering',
     excerpt: '',
-    sectionsJSON: TEMPLATES.heading + '\n\n' + TEMPLATES.paragraph,
+    sectionsJSON: '[\n' + TEMPLATES.heading + ',\n' + TEMPLATES.paragraph + '\n]',
     color: '#FF4B4B',
     image: '',
     date: getTodayDate()
@@ -166,7 +81,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const smartInsert = (template: string, useLastPosition: boolean = false) => {
     const textarea = textareaRef.current;
-    const current = newBlog.sectionsJSON;
+    let current = newBlog.sectionsJSON;
 
     // Determine cursor position: either current focus or saved last position
     let start: number | null = null;
@@ -180,21 +95,39 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       end = lastCursorPositionRef.current.end;
     }
 
-    // If we have a cursor position, insert at that location
+    // Try to be smart about commas
+    const trimmed = current.trim();
+    if (trimmed.endsWith(']')) {
+      // It's a closed array, we might need to remove the closing bracket and add a comma
+      // This is complex to do perfectly with regex, so we'll just append and let user fix structure usually,
+      // OR we can assume the user is inside the array if they are inserting.
+    }
+
+    // Simple Insertion Logic for JSON - just insert text
+    // We can add a comma before it if the previous char isn't [ or {
+
+    let insertText = template;
+
+    // If we are appending to a non-empty list that ends with }, add a comma and newline
+    if ((start === null || start === current.length) && trimmed.length > 2 && trimmed.endsWith(']')) {
+      // Remove last ]
+      current = current.substring(0, current.lastIndexOf(']'));
+      insertText = ',\n' + template + '\n]';
+      start = current.length;
+      end = current.length;
+    }
+
     if (start !== null && end !== null) {
       const before = current.substring(0, start);
       const after = current.substring(end);
 
-      // For markdown, just add newlines around the template
-      const needsNewlineBefore = before.length > 0 && !before.endsWith('\n\n') && !before.endsWith('\n');
-      const needsNewlineAfter = after.length > 0 && !after.startsWith('\n\n') && !after.startsWith('\n');
+      // If previous non-whitespace char was }, add a comma
+      if (before.trimEnd().endsWith('}')) {
+        insertText = ',\n' + insertText;
+      }
 
-      const insertText = (needsNewlineBefore ? '\n\n' : '') + template + (needsNewlineAfter ? '\n\n' : '');
       const updated = before + insertText + after;
-
       setNewBlog({ ...newBlog, sectionsJSON: updated });
-      setErrors({ ...errors, sectionsJSON: false });
-
       // Restore cursor position after the inserted text
       if (textarea) {
         setTimeout(() => {
@@ -206,19 +139,16 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }, 0);
       }
     } else {
-      // Fallback: append at the end (simple markdown)
-      const trimmed = current.trim();
-      let updated = '';
-
-      if (trimmed === '') {
-        updated = template;
+      // Fallback: overwrite or append? 
+      // If empty, start array
+      if (!trimmed) {
+        setNewBlog({ ...newBlog, sectionsJSON: '[\n' + template + '\n]' });
       } else {
-        updated = trimmed + '\n\n' + template;
+        // Just append, assuming user knows what they are doing
+        setNewBlog({ ...newBlog, sectionsJSON: current + '\n' + template });
       }
-
-      setNewBlog({ ...newBlog, sectionsJSON: updated });
-      setErrors({ ...errors, sectionsJSON: false });
     }
+    setErrors({ ...errors, sectionsJSON: false });
   };
 
   const clearEditor = () => {
@@ -243,8 +173,16 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     try {
-      // Parse markdown to sections
-      let parsedSections = markdownToSections(newBlog.sectionsJSON);
+      // Parse JSON to sections
+      let parsedSections;
+      try {
+        parsedSections = JSON.parse(newBlog.sectionsJSON);
+        if (!Array.isArray(parsedSections)) throw new Error("Root must be an array");
+      } catch (e) {
+        setErrors({ sectionsJSON: true });
+        showFeedback("INVALID JSON! Check syntax! 🤖💥", "error");
+        return;
+      }
 
       // Resolve Image Tokens
       parsedSections = parsedSections.map((section: any) => {
@@ -339,7 +277,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       title: blog.title,
       category: blog.category || 'Engineering',
       excerpt: blog.excerpt,
-      sectionsJSON: sectionsToMarkdown(processedSections),
+      sectionsJSON: JSON.stringify(processedSections, null, 2),
       color: blog.color || '#FF4B4B',
       image: blog.image || '',
       date: dateValue
@@ -474,47 +412,48 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* Tab Handle */}
       <div className="flex">
         {/* The sliding panel - syntax reference */}
-        <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[300px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
-          <div className="w-[300px] p-4 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
-            <h3 className="text-sm font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-3">📖 Syntax Guide</h3>
+        <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[350px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
+          <div className="w-[350px] p-4 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <h3 className="text-sm font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-3">📖 JSON Logic Guide</h3>
             <div className="space-y-3 text-xs">
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
-                <p className="text-yellow-400 font-black uppercase mb-1">Heading</p>
-                <p className="text-gray-300 mb-1">Big section title</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded"># Your Title</code>
+                <p className="text-yellow-400 font-black uppercase mb-1">Structure</p>
+                <p className="text-gray-300 mb-1">Everything must be in a list <code>[]</code></p>
               </div>
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
-                <p className="text-yellow-400 font-black uppercase mb-1">Subheading</p>
-                <p className="text-gray-300 mb-1">Smaller section title</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded">## Your Subheading</code>
+                <p className="text-yellow-400 font-black uppercase mb-1">Heading</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "heading",
+  "content": "Title Here"
+}`}</code>
               </div>
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
                 <p className="text-yellow-400 font-black uppercase mb-1">Paragraph</p>
-                <p className="text-gray-300 mb-1">Regular text content</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded">Just write your text...</code>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "paragraph",
+  "content": "Text..."
+}`}</code>
               </div>
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
                 <p className="text-yellow-400 font-black uppercase mb-1">Image</p>
-                <p className="text-gray-300 mb-1">Add image with caption</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded text-[10px]">[IMAGE: url | caption]</code>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "image",
+  "content": "URL",
+  "caption": "Alt text"
+}`}</code>
               </div>
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
                 <p className="text-yellow-400 font-black uppercase mb-1">Code Block</p>
-                <p className="text-gray-300 mb-1">Syntax highlighted code</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded text-[10px] whitespace-pre">{`\`\`\`javascript
-your code here
-\`\`\``}</code>
-              </div>
-
-              <div className="bg-black/40 p-2 rounded border border-white/20">
-                <p className="text-yellow-400 font-black uppercase mb-1">Note</p>
-                <p className="text-gray-300 mb-1">Highlighted tip/note</p>
-                <code className="text-green-400 block bg-black/50 p-1 rounded">{`> NOTE: Your tip here`}</code>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "code",
+  "content": "console.log()",
+  "language": "js"
+}`}</code>
               </div>
 
             </div>
@@ -525,7 +464,7 @@ your code here
         <div className="bg-[#003366] border-2 border-l-0 border-black py-2 px-1 cursor-pointer flex items-center shadow-[2px_2px_0px_#000] group-hover:bg-[#004080] transition-colors rounded-r-md">
           <div className="writing-vertical text-white font-black text-[10px] uppercase tracking-wider flex items-center gap-0.5">
             <span className="text-xs">📖</span>
-            <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>HELP</span>
+            <span style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>JSON HELP</span>
           </div>
         </div>
       </div>
@@ -627,7 +566,7 @@ your code here
                                 if (typeof reader.result === 'string') {
                                   const imgId = `IMG_${Date.now()}`;
                                   setImageMap(prev => ({ ...prev, [imgId]: reader.result as string }));
-                                  smartInsert(`[IMAGE: {{${imgId}}} | Uploaded Image]`, true);
+                                  smartInsert(`{\n  "type": "image",\n  "content": "{{${imgId}}}",\n  "caption": "Uploaded Image"\n}`, true);
                                 }
                               };
                               reader.readAsDataURL(file);

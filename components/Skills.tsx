@@ -1,11 +1,37 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { SKILLS } from '../constants';
 
 const Skills: React.FC = () => {
   const [currentSkills, setCurrentSkills] = useState(SKILLS);
   const [isResetting, setIsResetting] = useState(false);
+  const [radius, setRadius] = useState('50%'); // Default to smaller radius for mobile safety
+  const [fontSize, setFontSize] = useState(10); // Default font size
+
+  useEffect(() => {
+    // Adjust radius based on screen size to prevent label clipping
+    const updateRadius = () => {
+      const width = window.innerWidth;
+      if (width < 380) {
+        setRadius('35%'); // Ultra small screens (iPhone SE etc)
+        setFontSize(8);
+      } else if (width < 500) {
+        setRadius('40%'); // Normal mobile
+        setFontSize(9);
+      } else if (width < 768) {
+        setRadius('50%'); // Large mobile
+        setFontSize(10);
+      } else {
+        setRadius('70%'); // Tablet/Desktop
+        setFontSize(11);
+      }
+    };
+
+    updateRadius(); // Set initial
+    window.addEventListener('resize', updateRadius);
+    return () => window.removeEventListener('resize', updateRadius);
+  }, []);
 
   const data = currentSkills.map(s => ({ subject: s.name, A: s.level, fullMark: 100 }));
 
@@ -109,18 +135,18 @@ const Skills: React.FC = () => {
           ))}
         </div>
         {/* Radar Chart Container */}
-        <div className="w-full lg:w-[450px] max-h-[500px] lg:max-h-none aspect-square bg-white border-[8px] border-black shadow-[15px_15px_0px_#000] p-6 flex items-center justify-center relative rotate-1 self-center order-2 lg:col-start-2 lg:row-span-2 lg:sticky lg:top-24">
+        <div className="w-full lg:w-[450px] max-h-[500px] lg:max-h-none aspect-square bg-white border-[8px] border-black shadow-[15px_15px_0px_#000] p-2 md:p-6 flex items-center justify-center relative rotate-1 self-center order-2 lg:col-start-2 lg:row-span-2 lg:sticky lg:top-24">
           {/* Decorative Corner Labels */}
           <div className="absolute top-2 left-2 text-[10px] font-black uppercase bg-black text-white px-2">Live_Telemetry</div>
           <div className="absolute bottom-2 right-2 text-[10px] font-black uppercase text-gray-400">Arch_v2.5</div>
 
           <div className="w-full h-full pointer-events-none lg:pointer-events-auto" style={{ minHeight: '300px' }}>
             <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
+              <RadarChart cx="50%" cy="50%" outerRadius={radius} data={data}>
                 <PolarGrid stroke="#000" strokeWidth={1} strokeDasharray="3 3" />
                 <PolarAngleAxis
                   dataKey="subject"
-                  tick={{ fill: '#000', fontWeight: '900', fontSize: 10 }}
+                  tick={{ fill: '#000', fontWeight: '900', fontSize: fontSize }}
                 />
                 <Radar
                   name="Stats"
