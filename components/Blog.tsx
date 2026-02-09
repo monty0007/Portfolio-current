@@ -57,6 +57,23 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
         </div>
       );
 
+    case 'link':
+      return (
+        <div className="my-8 bg-[#10B981] border-3 border-black p-5 shadow-[6px_6px_0px_#000] relative group hover:shadow-[8px_8px_0px_#000] transition-all">
+          <div className="absolute -top-4 -left-4 text-3xl">🔗</div>
+          <h4 className="font-bold uppercase text-sm mb-2 text-white">External Link: <span className="font-black normal-case">{section.content}</span></h4>
+          <a
+            href={section.content}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-black text-lg text-white hover:text-black transition-colors flex items-center gap-2 underline decoration-2"
+          >
+            {section.caption || 'Visit Link'}
+            <span className="text-xl">→</span>
+          </a>
+        </div>
+      );
+
     default:
       return null;
   }
@@ -134,9 +151,22 @@ const Blog: React.FC = () => {
 
           {/* Header Section */}
           <header className="mb-10">
-            <span className="px-4 py-1.5 bg-[#FF4B4B] text-white border-3 border-black font-bold uppercase text-xs shadow-[4px_4px_0px_#000] inline-block">
-              {(selectedPost as any).category || 'Blog'}
-            </span>
+            <div className="flex justify-between items-center flex-wrap gap-3">
+              <span className="px-4 py-1.5 bg-[#FF4B4B] text-white border-3 border-black font-bold uppercase text-xs shadow-[4px_4px_0px_#000] inline-block">
+                {(selectedPost as any).category || 'Blog'}
+              </span>
+
+              {selectedPost.liveLink && (
+                <a
+                  href={selectedPost.liveLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cartoon-btn bg-[#00A1FF] text-white px-4 py-1.5 font-bold uppercase text-xs hover:bg-blue-400 transition-colors flex items-center gap-2 shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] border-3 border-black"
+                >
+                  🔗 LIVE LINK
+                </a>
+              )}
+            </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase mt-5 leading-tight tracking-tight text-black">
               {selectedPost.title}
             </h1>

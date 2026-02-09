@@ -30,7 +30,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     paragraph: '{\n  "type": "paragraph",\n  "content": "Once upon a time in the 22nd century..."\n}',
     image: '{\n  "type": "image",\n  "content": "url_here",\n  "caption": "Add a caption"\n}',
     code: '{\n  "type": "code",\n  "content": "console.log(\'Action Bastion!\');",\n  "language": "javascript"\n}',
-    note: '{\n  "type": "note",\n  "content": "This is a secret gadget tip!"\n}'
+    note: '{\n  "type": "note",\n  "content": "This is a secret gadget tip!"\n}',
+    link: '{\n  "type": "link",\n  "content": "https://example.com",\n  "caption": "Check out this resource"\n}'
   };
 
 
@@ -45,7 +46,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     sectionsJSON: '[\n' + TEMPLATES.heading + ',\n' + TEMPLATES.paragraph + '\n]',
     color: '#FF4B4B',
     image: '',
-    date: getTodayDate()
+    date: getTodayDate(),
+    liveLink: ''
   });
 
   const [newBlog, setNewBlog] = useState(getDefaultBlogState());
@@ -95,56 +97,74 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       end = lastCursorPositionRef.current.end;
     }
 
-    // Try to be smart about commas
     const trimmed = current.trim();
-    if (trimmed.endsWith(']')) {
-      // It's a closed array, we might need to remove the closing bracket and add a comma
-      // This is complex to do perfectly with regex, so we'll just append and let user fix structure usually,
-      // OR we can assume the user is inside the array if they are inserting.
-    }
-
-    // Simple Insertion Logic for JSON - just insert text
-    // We can add a comma before it if the previous char isn't [ or {
-
     let insertText = template;
 
-    // If we are appending to a non-empty list that ends with }, add a comma and newline
+    // If we are appending to a non-empty list that ends with ], add inside the array
     if ((start === null || start === current.length) && trimmed.length > 2 && trimmed.endsWith(']')) {
-      // Remove last ]
-      current = current.substring(0, current.lastIndexOf(']'));
-      insertText = ',\n' + template + '\n]';
-      start = current.length;
-      end = current.length;
+      // Find position before the last ]
+      const lastBracketIndex = current.lastIndexOf(']');
+      const beforeBracket = current.substring(0, lastBracketIndex).trimEnd();
+
+      // Check if there's content before the bracket (not just [)
+      if (beforeBracket.endsWith('}')) {
+        // There's existing content, add comma before new template
+        current = beforeBracket + ',\n' + template + '\n]';
+      } else if (beforeBracket.endsWith('[')) {
+        // Empty array, just add the template
+        current = beforeBracket + '\n' + template + '\n]';
+      } else {
+        // Some other case, just add
+        current = beforeBracket + '\n' + template + '\n]';
+      }
+      setNewBlog({ ...newBlog, sectionsJSON: current });
+
+      // Move cursor to end of inserted text
+      if (textarea) {
+        setTimeout(() => {
+          const newPos = current.length - 2; // Before the ]
+          textarea.focus();
+          textarea.setSelectionRange(newPos, newPos);
+          lastCursorPositionRef.current = { start: newPos, end: newPos };
+        }, 0);
+      }
+      setErrors({ ...errors, sectionsJSON: false });
+      return;
     }
 
     if (start !== null && end !== null) {
       const before = current.substring(0, start);
       const after = current.substring(end);
+      const beforeTrimmed = before.trimEnd();
+      const afterTrimmed = after.trimStart();
 
-      // If previous non-whitespace char was }, add a comma
-      if (before.trimEnd().endsWith('}')) {
+      // Determine if we need a comma before
+      if (beforeTrimmed.endsWith('}')) {
         insertText = ',\n' + insertText;
+      }
+
+      // Determine if we need a comma after (if next non-whitespace is {)
+      if (afterTrimmed.startsWith('{')) {
+        insertText = insertText + ',';
       }
 
       const updated = before + insertText + after;
       setNewBlog({ ...newBlog, sectionsJSON: updated });
+
       // Restore cursor position after the inserted text
       if (textarea) {
         setTimeout(() => {
           const newPos = start! + insertText.length;
           textarea.focus();
           textarea.setSelectionRange(newPos, newPos);
-          // Update the saved position
           lastCursorPositionRef.current = { start: newPos, end: newPos };
         }, 0);
       }
     } else {
-      // Fallback: overwrite or append? 
-      // If empty, start array
+      // Fallback: overwrite or append
       if (!trimmed) {
         setNewBlog({ ...newBlog, sectionsJSON: '[\n' + template + '\n]' });
       } else {
-        // Just append, assuming user knows what they are doing
         setNewBlog({ ...newBlog, sectionsJSON: current + '\n' + template });
       }
     }
@@ -211,7 +231,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         image: newBlog.image,
         readTime: '5 min',
         tags: [],
-        author: 'Manish Yadav'
+        author: 'Manish Yadav',
+        liveLink: newBlog.liveLink
       };
 
       let result;
@@ -280,7 +301,8 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       sectionsJSON: JSON.stringify(processedSections, null, 2),
       color: blog.color || '#FF4B4B',
       image: blog.image || '',
-      date: dateValue
+      date: dateValue,
+      liveLink: blog.liveLink || ''
     });
     setErrors({});
     showFeedback("Blog loaded for editing! ✏️");
@@ -407,6 +429,41 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     document.body
   );
 
+  // Full JSON template for the copy all button
+  const FULL_JSON_TEMPLATE = `[
+  {
+    "type": "heading",
+    "content": "Title Here"
+  },
+  {
+    "type": "subheading",
+    "content": "Subtitle Here"
+  },
+  {
+    "type": "paragraph",
+    "content": "Your text content..."
+  },
+  {
+    "type": "image",
+    "content": "URL or {{IMG_TOKEN}}",
+    "caption": "Image caption"
+  },
+  {
+    "type": "code",
+    "content": "console.log('Hello!');",
+    "language": "javascript"
+  },
+  {
+    "type": "note",
+    "content": "Important note or tip!"
+  },
+  {
+    "type": "link",
+    "content": "https://example.com",
+    "caption": "Link description"
+  }
+]`;
+
   const SlideOutManual = () => (
     <div className="fixed left-0 top-1/2 -translate-y-1/2 z-50 group">
       {/* Tab Handle */}
@@ -414,7 +471,15 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* The sliding panel - syntax reference */}
         <div className="bg-[#003366] border-4 border-l-0 border-black w-0 group-hover:w-[350px] overflow-hidden transition-all duration-300 ease-out shadow-[8px_0px_20px_rgba(0,0,0,0.3)]">
           <div className="w-[350px] p-4 text-white max-h-[70vh] overflow-y-auto custom-scrollbar">
-            <h3 className="text-sm font-black uppercase italic tracking-tighter decoration-yellow-400 underline mb-3">📖 JSON Logic Guide</h3>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-black uppercase italic tracking-tighter decoration-yellow-400 underline">📖 JSON Logic Guide</h3>
+              <button
+                onClick={() => handleCopyTemplate(FULL_JSON_TEMPLATE)}
+                className="bg-[#FFD600] text-black px-2 py-1 text-[10px] font-black border-2 border-black hover:bg-yellow-400 shadow-[2px_2px_0px_#000] transition-all"
+              >
+                📋 COPY ALL
+              </button>
+            </div>
             <div className="space-y-3 text-xs">
 
               <div className="bg-black/40 p-2 rounded border border-white/20">
@@ -427,6 +492,14 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
   "type": "heading",
   "content": "Title Here"
+}`}</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Subheading</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "subheading",
+  "content": "Subtitle Here"
 }`}</code>
               </div>
 
@@ -452,7 +525,24 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
   "type": "code",
   "content": "console.log()",
-  "language": "js"
+  "language": "javascript"
+}`}</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Note</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "note",
+  "content": "Important tip!"
+}`}</code>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded border border-white/20">
+                <p className="text-yellow-400 font-black uppercase mb-1">Link</p>
+                <code className="text-green-400 block bg-black/50 p-1 rounded whitespace-pre">{`{
+  "type": "link",
+  "content": "https://...",
+  "caption": "Link text"
 }`}</code>
               </div>
 
@@ -539,17 +629,28 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                   <textarea placeholder="Quick Excerpt..." value={newBlog.excerpt} onChange={e => setNewBlog({ ...newBlog, excerpt: e.target.value })} className="w-full p-4 border-4 border-black font-bold h-20 text-black" />
 
+                  <div>
+                    <label className="font-black uppercase text-xs mb-1 block">🔗 Live Link <span className="text-gray-400 font-normal">(optional project URL)</span></label>
+                    <input
+                      type="url"
+                      placeholder="https://your-project-link.com"
+                      value={newBlog.liveLink}
+                      onChange={e => setNewBlog({ ...newBlog, liveLink: e.target.value })}
+                      className="w-full p-4 border-4 border-black font-bold text-black"
+                    />
+                  </div>
+
                   <div className={`p-4 bg-gray-50 border-4 border-black ${errors.sectionsJSON ? 'border-red-500' : ''}`}>
                     <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                       <p className="text-xs font-black uppercase text-black">The Assembly Board</p>
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => smartInsert(TEMPLATES.heading, true)} className="bg-black text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ HEADING</button>
-                        <button onClick={() => smartInsert(TEMPLATES.subheading, true)} className="bg-red-500 text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ SUB-H</button>
-                        <button onClick={() => smartInsert(TEMPLATES.paragraph, true)} className="bg-white text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ PARA</button>
+                      <div className="flex flex-wrap gap-1">
+                        <button onClick={() => smartInsert(TEMPLATES.heading, true)} className="bg-black text-white px-2 py-1 text-[9px] font-black border-2 border-black">+H1</button>
+                        <button onClick={() => smartInsert(TEMPLATES.subheading, true)} className="bg-red-500 text-white px-2 py-1 text-[9px] font-black border-2 border-black">+H2</button>
+                        <button onClick={() => smartInsert(TEMPLATES.paragraph, true)} className="bg-white text-black px-2 py-1 text-[9px] font-black border-2 border-black">+P</button>
 
                         {/* Image Uploader for Sections */}
-                        <label className="bg-[#00A1FF] text-white px-3 py-1 text-[10px] font-black border-2 border-black cursor-pointer hover:bg-blue-400">
-                          + IMG FILE
+                        <label className="bg-[#00A1FF] text-white px-2 py-1 text-[9px] font-black border-2 border-black cursor-pointer hover:bg-blue-400">
+                          +IMG
                           <input
                             type="file"
                             accept="image/*"
@@ -576,10 +677,11 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           />
                         </label>
 
-                        <button onClick={() => smartInsert(TEMPLATES.image, true)} className="bg-[#e346d3] text-white px-3 py-1 text-[10px] font-black border-2 border-black ">+ IMG URL</button>
-                        <button onClick={() => smartInsert(TEMPLATES.code, true)} className="bg-[#FFD600] text-black px-3 py-1 text-[10px] font-black border-2 border-black">+ CODE</button>
-                        <button onClick={() => smartInsert(TEMPLATES.note, true)} className="bg-[#6B4BFF] text-white px-3 py-1 text-[10px] font-black border-2 border-black">+ NOTE</button>
-                        <button onClick={clearEditor} className="bg-gray-400 text-white px-3 py-1 text-[10px] font-black border-2 border-black">WIPE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.image, true)} className="bg-[#e346d3] text-white px-2 py-1 text-[9px] font-black border-2 border-black">+URL</button>
+                        <button onClick={() => smartInsert(TEMPLATES.code, true)} className="bg-[#FFD600] text-black px-2 py-1 text-[9px] font-black border-2 border-black">+CODE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.note, true)} className="bg-[#6B4BFF] text-white px-2 py-1 text-[9px] font-black border-2 border-black">+NOTE</button>
+                        <button onClick={() => smartInsert(TEMPLATES.link, true)} className="bg-[#10B981] text-white px-2 py-1 text-[9px] font-black border-2 border-black">+LINK</button>
+                        <button onClick={clearEditor} className="bg-gray-400 text-white px-2 py-1 text-[9px] font-black border-2 border-black">WIPE</button>
                       </div>
                     </div>
                     <textarea

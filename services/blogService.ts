@@ -15,6 +15,7 @@ export interface BlogPost {
     category?: string;
     color?: string;
     sections?: any[]; // JSON structure
+    liveLink?: string; // External project link
 }
 
 export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: string }): Promise<{ success: boolean; message: string }> => {
@@ -35,7 +36,7 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
         const tagsStr = JSON.stringify(post.tags || []);
 
         await db.execute({
-            sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content, author, read_time, image_url, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO posts (slug, title, created_at, excerpt, category, color, sections, content, author, read_time, image_url, tags, live_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
                 slug,
                 post.title,
@@ -48,7 +49,8 @@ export const createPost = async (post: Omit<BlogPost, 'id' | 'slug'> & { slug?: 
                 post.author || 'Manish Yadav',
                 post.readTime || '5 min',
                 post.image || '',
-                tagsStr
+                tagsStr,
+                post.liveLink || ''
             ]
         });
         return { success: true, message: "Post created successfully!" };
@@ -92,7 +94,8 @@ export const updatePost = async (id: number, post: Partial<Omit<BlogPost, 'id' |
                 author = COALESCE(?, author),
                 read_time = COALESCE(?, read_time),
                 image_url = COALESCE(?, image_url),
-                tags = COALESCE(?, tags)
+                tags = COALESCE(?, tags),
+                live_link = COALESCE(?, live_link)
             WHERE id = ?`,
             args: [
                 post.title ?? null,
@@ -106,6 +109,7 @@ export const updatePost = async (id: number, post: Partial<Omit<BlogPost, 'id' |
                 post.readTime ?? null,
                 post.image ?? null,
                 tagsStr ?? null,
+                post.liveLink ?? null,
                 id
             ]
         });
@@ -170,7 +174,8 @@ export const getPosts = async (): Promise<BlogPost[]> => {
             tags: parseTags(row.tags),
             category: String(row.category || ''),
             color: String(row.color || ''),
-            sections: parseTags(row.sections) // Using same parser for JSON array
+            sections: parseTags(row.sections), // Using same parser for JSON array
+            liveLink: String(row.live_link || '')
         }));
 
         // Sort by date descending (newest first) using parsed timestamps
@@ -226,7 +231,8 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
             tags: parseTags(row.tags),
             category: String(row.category || ''),
             color: String(row.color || ''),
-            sections: parseTags(row.sections)
+            sections: parseTags(row.sections),
+            liveLink: String(row.live_link || '')
         };
     } catch (error) {
         console.error(`Failed to fetch post ${slug}:`, error);
