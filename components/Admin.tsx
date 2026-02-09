@@ -16,7 +16,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showWipeModal, setShowWipeModal] = useState(false);
+  const [showDeleteAchModal, setShowDeleteAchModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [deleteAchTargetId, setDeleteAchTargetId] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [imageMap, setImageMap] = useState<{ [key: string]: string }>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -346,7 +348,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         a.id === editingAchId ? { ...newAch, id: editingAchId } : a
       );
       setAchievements(updatedAchievements);
-      localStorage.setItem('achievements', JSON.stringify(updatedAchievements));
+      localStorage.setItem('Manish_portfolio_achievements_v2', JSON.stringify(updatedAchievements));
       setEditingAchId(null);
       setNewAch({ title: '', issuer: '', date: '2024', icon: '🏆', color: '#FFD600' });
       showFeedback("BADGE UPDATED! ✏️✨");
@@ -377,6 +379,33 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     showFeedback("Edit cancelled! 🔙");
   };
 
+  const handleDeleteAch = (id: string) => {
+    setDeleteAchTargetId(id);
+    setShowDeleteAchModal(true);
+  };
+
+  const confirmDeleteAch = () => {
+    if (deleteAchTargetId) {
+      setAchievements(deleteAchievement(deleteAchTargetId));
+      showFeedback("BADGE DELETED! 🗑️");
+    }
+    setShowDeleteAchModal(false);
+    setDeleteAchTargetId(null);
+  };
+
+  const moveBadge = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= achievements.length) return;
+
+    const updated = [...achievements];
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+
+    setAchievements(updated);
+    localStorage.setItem('Manish_portfolio_achievements_v2', JSON.stringify(updated));
+    showFeedback(direction === 'up' ? "Badge moved up! ⬆️" : "Badge moved down! ⬇️");
+  };
 
 
   const DeleteConfirmationModal = () => createPortal(
@@ -403,6 +432,32 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     </div>,
     document.body
   );
+
+  const DeleteAchConfirmationModal = () => createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border-[6px] border-black p-8 shadow-[16px_16px_0px_#000] max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+        <div className="text-6xl mb-4">🏆</div>
+        <h3 className="text-2xl font-black uppercase mb-2">Delete this Badge?</h3>
+        <p className="font-bold text-gray-600 mb-8">This badge will be removed from your collection!</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => setShowDeleteAchModal(false)}
+            className="flex-1 bg-white text-black border-4 border-black py-3 font-black uppercase hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDeleteAch}
+            className="flex-1 bg-red-500 text-white border-4 border-black py-3 font-black uppercase hover:bg-red-600 shadow-[4px_4px_0px_#000]"
+          >
+            Delete!
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
 
   const WipeConfirmationModal = () => createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -566,6 +621,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       {showDeleteModal && <DeleteConfirmationModal />}
       {showWipeModal && <WipeConfirmationModal />}
+      {showDeleteAchModal && <DeleteAchConfirmationModal />}
 
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
@@ -760,7 +816,12 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <input type="text" placeholder="Issuer..." value={newAch.issuer} onChange={e => setNewAch({ ...newAch, issuer: e.target.value })} className="w-full p-4 border-4 border-black font-bold" />
                   <div className="grid grid-cols-3 gap-4">
                     <input type="text" placeholder="Year" value={newAch.date} onChange={e => setNewAch({ ...newAch, date: e.target.value })} className="p-4 border-4 border-black font-bold" />
-                    <input type="text" placeholder="Emoji" value={newAch.icon} onChange={e => setNewAch({ ...newAch, icon: e.target.value })} className="p-4 border-4 border-black font-bold" />
+                    <select value={newAch.icon} onChange={e => setNewAch({ ...newAch, icon: e.target.value })} className="p-4 border-4 border-black font-bold text-2xl">
+                      <option value="🏆">🏆 Trophy</option>
+                      <option value="🥇">🥇 1st Place</option>
+                      <option value="🥈">🥈 2nd Place</option>
+                      <option value="🥉">🥉 3rd Place</option>
+                    </select>
                     <select value={newAch.color} onChange={e => setNewAch({ ...newAch, color: e.target.value })} className="p-4 border-4 border-black font-bold">
                       <option value="#FFD600">Yellow</option>
                       <option value="#00A1FF">Blue</option>
@@ -776,7 +837,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="space-y-4">
               <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4">Earned Badges</h3>
               <div className="overflow-y-auto max-h-[800px] space-y-3">
-                {achievements.map(ach => (
+                {achievements.map((ach, index) => (
                   <div key={ach.id} className={`bg-white border-4 border-black p-4 shadow-[4px_4px_0px_#000] ${editingAchId === ach.id ? 'ring-4 ring-yellow-400' : ''}`}>
                     <div className="flex justify-between items-center gap-2">
                       <div className="flex items-center gap-3 font-black uppercase text-sm min-w-0 flex-1">
@@ -786,7 +847,24 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           <div className="text-xs text-gray-500 mt-1">{ach.issuer} • {ach.date}</div>
                         </div>
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-1 flex-shrink-0">
+                        {/* Reorder buttons */}
+                        <button
+                          onClick={() => moveBadge(index, 'up')}
+                          disabled={index === 0}
+                          className={`w-7 h-7 border-2 border-black font-black text-xs ${index === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'} shadow-[2px_2px_0px_#000] transition-all`}
+                          title="Move up"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => moveBadge(index, 'down')}
+                          disabled={index === achievements.length - 1}
+                          className={`w-7 h-7 border-2 border-black font-black text-xs ${index === achievements.length - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'} shadow-[2px_2px_0px_#000] transition-all`}
+                          title="Move down"
+                        >
+                          ↓
+                        </button>
                         <button
                           onClick={() => handleEditAch(ach)}
                           className="px-3 py-1 bg-[#00A1FF] text-white border-2 border-black font-black text-xs uppercase hover:bg-blue-400 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
@@ -796,7 +874,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         </button>
                         <button
                           aria-label="Delete badge"
-                          onClick={() => setAchievements(deleteAchievement(ach.id))}
+                          onClick={() => handleDeleteAch(ach.id)}
                           className="w-8 h-8 bg-red-500 text-white border-2 border-black font-black hover:bg-red-600 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
                           title="Delete badge"
                         >

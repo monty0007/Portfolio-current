@@ -59,14 +59,6 @@ export const ACHIEVEMENTS: Achievement[] = [
     date: '2025',
     icon: '🥇',
     color: '#00A1FF'
-  },
-  {
-    id: '3',
-    title: 'Smart India Hackathon 2nd Place',
-    issuer: 'Indian Institute of Technology Bombay',
-    date: '2023',
-    icon: '🥈',
-    color: '#FF4B4B'
   }
 ];
 
