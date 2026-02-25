@@ -672,21 +672,33 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <input type="text" placeholder="Category" value={newBlog.category} onChange={e => setNewBlog({ ...newBlog, category: e.target.value })} className="p-4 border-4 border-black font-bold text-black" />
-                    <select value={newBlog.color} onChange={e => setNewBlog({ ...newBlog, color: e.target.value })} className="p-4 border-4 border-black font-bold text-black">
-                      <option value="#FF4B4B">Red Alert</option>
-                      <option value="#00A1FF">Sonic Blue</option>
-                      <option value="#FFD600">Golden Yellow</option>
-                      <option value="#10B981">Emerald Green</option>
-                      <option value="#6B4BFF">Electric Purple</option>
-                      <option value="#FF6B6B">Coral Pink</option>
-                      <option value="#F59E0B">Amber Flare</option>
-                      <option value="#06B6D4">Aqua Bolt</option>
-                      <option value="#8B5CF6">Void Violet</option>
-                      <option value="#EC4899">Neon Pink</option>
-                      <option value="#14B8A6">Teal Strike</option>
-                      <option value="#000000">Stealth Black</option>
-                      <option value="#FFFFFF">Ghost White</option>
-                    </select>
+                    <div className="flex flex-col gap-1.5 p-2 border-4 border-black bg-white justify-center shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                      <div className="flex flex-wrap gap-1.5 justify-center mt-0.5">
+                        {[
+                          { value: "#FF4B4B", label: "Red Alert" },
+                          { value: "#00A1FF", label: "Sonic Blue" },
+                          { value: "#FFD600", label: "Golden Yellow" },
+                          { value: "#10B981", label: "Emerald Green" },
+                          { value: "#6B4BFF", label: "Electric Purple" },
+                          { value: "#FF6B6B", label: "Coral Pink" },
+                          { value: "#F59E0B", label: "Amber Flare" },
+                          { value: "#06B6D4", label: "Aqua Bolt" },
+                          { value: "#8B5CF6", label: "Void Violet" },
+                          { value: "#EC4899", label: "Neon Pink" },
+                          { value: "#14B8A6", label: "Teal Strike" },
+                          { value: "#DC2626", label: "Crimson Rage" },
+                          { value: "#EAB308", label: "Cyber Yellow" }
+                        ].map(c => (
+                          <div
+                            key={c.value}
+                            onClick={() => setNewBlog({ ...newBlog, color: c.value })}
+                            className={`w-5 h-5 rounded-full border-2 border-black cursor-pointer transition-transform hover:scale-125 hover:z-10 relative ${newBlog.color === c.value ? 'ring-2 ring-black ring-offset-1 scale-125 z-10' : ''}`}
+                            style={{ backgroundColor: c.value }}
+                            title={c.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <div>
                       <input
                         type="date"

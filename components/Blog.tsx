@@ -287,7 +287,9 @@ const Blog: React.FC = () => {
                   navigate(`/blog/${post.slug || post.id}`);
                 }
               }}
-              className="bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all duration-200 ease-out cursor-pointer group h-full no-underline"
+              // Applying dynamic CSS variables to the group so child elements can inherit them
+              style={{ '--post-color': (post as any).color || '#FF4B4B' } as React.CSSProperties}
+              className="blog-card-group bg-white border-[6px] border-black shadow-[10px_10px_0px_#000] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[15px_15px_0px_#000] transition-all duration-200 ease-out cursor-pointer group h-full no-underline"
             >
               <div
                 className="w-full h-12 mb-6 border-b-4 border-black font-black uppercase flex items-center justify-between"
@@ -296,7 +298,9 @@ const Blog: React.FC = () => {
                 <span>{(post as any).category || 'Blog'}</span>
                 <span className="text-xs text-gray-400">{post.date}</span>
               </div>
-              <h3 className="text-3xl font-black uppercase mb-4 leading-tight group-hover:text-[#FF4B4B] transition-colors duration-200 text-black">
+              <h3
+                className="text-3xl font-black uppercase mb-4 leading-tight transition-colors duration-200 text-black group-hover:text-[var(--post-color)]"
+              >
                 {post.title}
               </h3>
               <p className="text-gray-700 font-bold mb-8 flex-1">
@@ -304,7 +308,9 @@ const Blog: React.FC = () => {
               </p>
               <div className="flex justify-between items-center">
                 <span className="font-black text-xs uppercase underline decoration-2 text-black">Read Decrypted File</span>
-                <div className="w-10 h-10 bg-black text-white flex items-center justify-center font-black group-hover:bg-[#FF4B4B] transition-colors duration-200">→</div>
+                <div
+                  className="w-10 h-10 bg-black text-white flex items-center justify-center font-black transition-colors duration-200 group-hover:bg-[var(--post-color)]"
+                >→</div>
               </div>
             </a>
           )) : (
@@ -314,8 +320,8 @@ const Blog: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
