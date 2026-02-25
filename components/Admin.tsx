@@ -49,7 +49,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     color: '#FF4B4B',
     image: '',
     date: getTodayDate(),
-    liveLink: ''
+    liveLink: '',
+    isDraft: false,
+    scheduledDate: ''
   });
 
   const [newBlog, setNewBlog] = useState(getDefaultBlogState());
@@ -234,7 +236,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         readTime: '5 min',
         tags: [],
         author: 'Manish Yadav',
-        liveLink: newBlog.liveLink
+        liveLink: newBlog.liveLink,
+        isDraft: newBlog.isDraft,
+        scheduledDate: newBlog.scheduledDate || undefined
       };
 
       let result;
@@ -304,7 +308,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       color: blog.color || '#FF4B4B',
       image: blog.image || '',
       date: dateValue,
-      liveLink: blog.liveLink || ''
+      liveLink: blog.liveLink || '',
+      isDraft: !!blog.isDraft,
+      scheduledDate: blog.scheduledDate || ''
     });
     setErrors({});
     showFeedback("Blog loaded for editing! ✏️");
@@ -670,6 +676,16 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <option value="#FF4B4B">Red Alert</option>
                       <option value="#00A1FF">Sonic Blue</option>
                       <option value="#FFD600">Golden Yellow</option>
+                      <option value="#10B981">Emerald Green</option>
+                      <option value="#6B4BFF">Electric Purple</option>
+                      <option value="#FF6B6B">Coral Pink</option>
+                      <option value="#F59E0B">Amber Flare</option>
+                      <option value="#06B6D4">Aqua Bolt</option>
+                      <option value="#8B5CF6">Void Violet</option>
+                      <option value="#EC4899">Neon Pink</option>
+                      <option value="#14B8A6">Teal Strike</option>
+                      <option value="#000000">Stealth Black</option>
+                      <option value="#FFFFFF">Ghost White</option>
                     </select>
                     <div>
                       <input
@@ -694,6 +710,27 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       onChange={e => setNewBlog({ ...newBlog, liveLink: e.target.value })}
                       className="w-full p-4 border-4 border-black font-bold text-black"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="flex items-center gap-3 p-4 border-4 border-black font-black uppercase text-xs cursor-pointer bg-white transition-all shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px]">
+                      <input
+                        type="checkbox"
+                        checked={newBlog.isDraft}
+                        onChange={e => setNewBlog({ ...newBlog, isDraft: e.target.checked })}
+                        className="w-6 h-6 border-2 border-black accent-[#FF4B4B]"
+                      />
+                      Save as Draft (Hide from public)
+                    </label>
+                    <div className="flex flex-col">
+                      <label className="font-black uppercase text-xs mb-1 block">🗓️ Publish Schedule <span className="text-gray-400 font-normal">(optional)</span></label>
+                      <input
+                        type="date"
+                        value={newBlog.scheduledDate}
+                        onChange={e => setNewBlog({ ...newBlog, scheduledDate: e.target.value })}
+                        className="w-full p-4 border-4 border-black font-bold text-black bg-white shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                      />
+                    </div>
                   </div>
 
                   <div className={`p-4 bg-gray-50 border-4 border-black ${errors.sectionsJSON ? 'border-red-500' : ''}`}>

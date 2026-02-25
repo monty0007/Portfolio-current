@@ -15,6 +15,8 @@ export interface BlogPost {
   sections?: BlogSection[];
   category: string;
   color: string;
+  isDraft?: boolean;
+  scheduledDate?: string;
 }
 
 export interface Project {

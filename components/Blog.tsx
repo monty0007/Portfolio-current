@@ -127,7 +127,15 @@ const Blog: React.FC = () => {
     if (!loading) loadPost();
   }, [slug, blogs, loading]);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const filteredBlogs = blogs.filter(b => {
+    // Hide drafts from public view
+    if (b.isDraft) return false;
+
+    // Hide posts scheduled for the future
+    if (b.scheduledDate && b.scheduledDate > todayStr) return false;
+
     const searchLower = searchTerm.toLowerCase();
     return (
       b.title.toLowerCase().includes(searchLower) ||
