@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import Blog from './components/Blog';
 import Admin from './components/Admin';
 import Home from './components/Home';
+import ProjectsPage from './components/ProjectsPage';
 import Toast from './components/Toast';
 
 const AppContent: React.FC = () => {
@@ -22,7 +23,12 @@ const AppContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
 
-  const handleNavigate = (newView: 'home' | 'blog' | 'admin', sectionId?: string) => {
+  const handleNavigate = (newView: 'home' | 'blog' | 'admin' | 'projects', sectionId?: string) => {
+    if (newView === 'projects') {
+      navigate('/projects');
+      return;
+    }
+
     if (newView === 'admin') {
       setShowLoginModal(true);
       return;
@@ -67,7 +73,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="relative min-h-screen">
       <FloatingIcons />
-      <Navbar onNavigate={handleNavigate} currentView={location.pathname === '/blog' ? 'blog' : location.pathname === '/admin' ? 'admin' : 'home'} />
+      <Navbar onNavigate={handleNavigate} currentView={location.pathname === '/blog' ? 'blog' : location.pathname === '/admin' ? 'admin' : location.pathname === '/projects' ? 'projects' : 'home'} />
 
       <main className="relative z-10">
         <Routes>
@@ -75,6 +81,7 @@ const AppContent: React.FC = () => {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
           <Route path="/admin" element={<Admin onBack={() => handleNavigate('home')} />} />
+          <Route path="/projects" element={<ProjectsPage />} />
         </Routes>
       </main>
 

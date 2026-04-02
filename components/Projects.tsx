@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { PROJECTS } from '../constants';
+import { getProjects } from '../services/projectService';
+import { Project } from '../types';
 
 const Scribble: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 100 20" className={`absolute fill-none stroke-current ${className}`} style={{ strokeWidth: 3, strokeLinecap: 'round' }}>
@@ -8,7 +9,7 @@ const Scribble: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const ProjectCard: React.FC<{ project: typeof PROJECTS[0]; index: number }> = ({ project, index }) => {
+const ProjectCard: React.FC<{ project: Project; index: number }> = ({ project, index }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -107,6 +108,11 @@ const ProjectCard: React.FC<{ project: typeof PROJECTS[0]; index: number }> = ({
 const Projects: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    getProjects().then(setProjects);
+  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -198,7 +204,7 @@ const Projects: React.FC = () => {
             opacity: Math.min(pinProgress * 3, 1),
           }}
         >
-          {PROJECTS.map((project, index) => (
+          {projects.map((project, index) => (
             <ProjectCard key={project.id} project={project} index={index} />
           ))}
 

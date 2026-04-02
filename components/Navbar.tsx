@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'blog' | 'admin', sectionId?: string) => void;
-  currentView: 'home' | 'blog' | 'admin';
+  onNavigate: (view: 'home' | 'blog' | 'admin' | 'projects', sectionId?: string) => void;
+  currentView: 'home' | 'blog' | 'admin' | 'projects';
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
@@ -98,6 +98,18 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             className={`hidden sm:block hover:text-yellow-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
           >
             Games
+          </a>
+          <a
+            href="/projects"
+            onClick={(e) => {
+              if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                onNavigate('projects');
+              }
+            }}
+            className={`cursor-pointer hover:text-red-500 transition-colors uppercase font-black ${currentView === 'projects' ? 'text-red-500 underline decoration-4' : 'text-black'}`}
+          >
+            Projects
           </a>
           <a
             href="/blog"

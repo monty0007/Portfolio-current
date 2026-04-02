@@ -28,6 +28,7 @@ export interface Project {
   tags: string[];
   color: string;
   link: string;
+  githubLink?: string;
   disabled: boolean;
 }
 

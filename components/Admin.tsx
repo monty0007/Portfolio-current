@@ -1,17 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getPosts, createPost, deletePost, updatePost, BlogPost } from '../services/blogService';
-import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService'; // Keep achievements mock for now or move it too? Assuming user only asked about blog.
-import { Achievement } from '../types';
+import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService';
+import { getProjects, createProject, updateProject, deleteProject, saveProjectOrder } from '../services/projectService';
+import { Achievement, Project } from '../types';
 import Toast from './Toast';
 
 const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [tab, setTab] = useState<'blogs' | 'achievements'>('blogs');
+  const [tab, setTab] = useState<'blogs' | 'achievements' | 'projects'>('blogs');
   const [showManual, setShowManual] = useState(false);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [editingBlogId, setEditingBlogId] = useState<number | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [editingAchId, setEditingAchId] = useState<string | null>(null);
+
+  // Projects state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  const [deleteProjectTargetId, setDeleteProjectTargetId] = useState<string | null>(null);
+  const getDefaultProjectState = () => ({
+    title: '',
+    description: '',
+    image: '',
+    tags: '',
+    color: '#FFD600',
+    link: '',
+    githubLink: '',
+    disabled: false,
+  });
+  const [newProject, setNewProject] = useState(getDefaultProjectState());
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -68,7 +86,13 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   useEffect(() => {
     refreshData();
     setAchievements(getAchievements());
+    refreshProjects();
   }, []);
+
+  const refreshProjects = async () => {
+    const data = await getProjects();
+    setProjects(data);
+  };
 
   const refreshData = async () => {
     const posts = await getPosts();
@@ -410,7 +434,82 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     localStorage.setItem('Manish_portfolio_achievements_v2', JSON.stringify(updated));
     showFeedback(direction === 'up' ? "Badge moved up! ⬆️" : "Badge moved down! ⬇️");
   };
+  // --- PROJECT HANDLERS ---
+  const handleSaveProject = async () => {
+    if (!newProject.title.trim()) {
+      showFeedback('Project title is required! 🛑', 'error');
+      return;
+    }
+    const projectData: Omit<Project, 'id'> = {
+      title: newProject.title.trim(),
+      description: newProject.description.trim(),
+      image: newProject.image.trim(),
+      tags: newProject.tags.split(',').map(t => t.trim()).filter(Boolean),
+      color: newProject.color,
+      link: newProject.link.trim(),
+      githubLink: newProject.githubLink.trim(),
+      disabled: newProject.disabled,
+    };
+    let result;
+    if (editingProjectId !== null) {
+      result = await updateProject(editingProjectId, projectData);
+    } else {
+      result = await createProject(projectData);
+    }
+    if (result.success) {
+      await refreshProjects();
+      setNewProject(getDefaultProjectState());
+      setEditingProjectId(null);
+      showFeedback(editingProjectId !== null ? 'PROJECT UPDATED! ✏️✨' : 'PROJECT LAUNCHED! 🚀✨');
+    } else {
+      showFeedback(`FAILED! ${result.message} 🛑`, 'error');
+    }
+  };
 
+  const handleEditProject = (project: Project) => {
+    setEditingProjectId(project.id);
+    setNewProject({
+      title: project.title,
+      description: project.description,
+      image: project.image,
+      tags: project.tags.join(', '),
+      color: project.color,
+      link: project.link,
+      githubLink: project.githubLink || '',
+      disabled: project.disabled,
+    });
+    showFeedback('Project loaded for editing! ✏️');
+  };
+
+  const handleDeleteProject = (id: string) => {
+    setDeleteProjectTargetId(id);
+    setShowDeleteProjectModal(true);
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!deleteProjectTargetId) return;
+    const success = await deleteProject(deleteProjectTargetId);
+    if (success) {
+      await refreshProjects();
+      showFeedback('PROJECT DELETED! 🗑️');
+    } else {
+      showFeedback('DELETE FAILED! 🛑', 'error');
+    }
+    setShowDeleteProjectModal(false);
+    setDeleteProjectTargetId(null);
+  };
+
+  const moveProject = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= projects.length) return;
+    const updated = [...projects];
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+    setProjects(updated);
+    saveProjectOrder(updated.map(p => p.id));
+    showFeedback(direction === 'up' ? 'Project moved up! ⬆️' : 'Project moved down! ⬇️');
+  };
 
   const DeleteConfirmationModal = () => createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -462,6 +561,30 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     document.body
   );
 
+  const DeleteProjectModal = () => createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border-[6px] border-black p-8 shadow-[16px_16px_0px_#000] max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-200">
+        <div className="text-6xl mb-4">🛠️</div>
+        <h3 className="text-2xl font-black uppercase mb-2">Delete this Project?</h3>
+        <p className="font-bold text-gray-600 mb-8">This will permanently remove the project!</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => setShowDeleteProjectModal(false)}
+            className="flex-1 bg-white text-black border-4 border-black py-3 font-black uppercase hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDeleteProject}
+            className="flex-1 bg-red-500 text-white border-4 border-black py-3 font-black uppercase hover:bg-red-600 shadow-[4px_4px_0px_#000]"
+          >
+            Delete!
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 
   const WipeConfirmationModal = () => createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -642,6 +765,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {showDeleteModal && <DeleteConfirmationModal />}
       {showWipeModal && <WipeConfirmationModal />}
       {showDeleteAchModal && <DeleteAchConfirmationModal />}
+      {showDeleteProjectModal && <DeleteProjectModal />}
 
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
@@ -652,13 +776,14 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="flex gap-4">
             <button onClick={() => setTab('blogs')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'blogs' ? 'bg-[#FF4B4B] text-white' : 'bg-white text-black'}`}>Blogs</button>
             <button onClick={() => setTab('achievements')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'achievements' ? 'bg-[#FFD600] text-black' : 'bg-white text-black'}`}>Badges</button>
+            <button onClick={() => setTab('projects')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'projects' ? 'bg-[#00A1FF] text-white' : 'bg-white text-black'}`}>Projects</button>
             <button onClick={onBack} className="cartoon-btn bg-black text-white px-6 py-2 font-black uppercase">Exit</button>
           </div>
         </div>
 
         {tab === 'blogs' && <SlideOutManual />}
 
-        {tab === 'blogs' ? (
+        {tab === 'blogs' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
 
@@ -881,7 +1006,9 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {tab === 'achievements' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 text-black">
             <div className="lg:col-span-2 space-y-8">
               <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
@@ -976,6 +1103,218 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      {/* ======== PROJECTS TAB ======== */}
+      {tab === 'projects' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 text-black">
+          {/* Form */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black uppercase">
+                  {editingProjectId !== null ? '✏️ Edit Project' : '🚀 New Project'}
+                </h2>
+                {editingProjectId !== null && (
+                  <button
+                    onClick={() => { setEditingProjectId(null); setNewProject(getDefaultProjectState()); }}
+                    className="bg-gray-500 text-white px-4 py-2 font-black uppercase border-2 border-black hover:bg-gray-600"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="font-black uppercase text-xs mb-1 block">Project Title <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Trivia Arena"
+                    value={newProject.title}
+                    onChange={e => setNewProject({ ...newProject, title: e.target.value })}
+                    className="w-full p-4 border-4 border-black font-bold text-black"
+                  />
+                </div>
+                <div>
+                  <label className="font-black uppercase text-xs mb-1 block">Description</label>
+                  <textarea
+                    placeholder="What does this project do?"
+                    value={newProject.description}
+                    onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+                    className="w-full p-4 border-4 border-black font-bold text-black h-24"
+                  />
+                </div>
+                <div>
+                  <label className="font-black uppercase text-xs mb-1 block">🖼️ Thumbnail</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Paste image URL..."
+                      value={newProject.image.startsWith('data:') ? '' : newProject.image}
+                      onChange={e => setNewProject({ ...newProject, image: e.target.value })}
+                      className="flex-1 p-4 border-4 border-black font-bold text-black"
+                    />
+                    <label className="flex items-center justify-center gap-1 bg-[#FF4B4B] text-white border-4 border-black px-4 font-black uppercase text-xs cursor-pointer shadow-[4px_4px_0px_#000] hover:bg-red-400 hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all whitespace-nowrap">
+                      📁 Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 1024 * 1024) {
+                            showFeedback('Image too large! Max 1MB 🛑', 'error');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            if (typeof reader.result === 'string') {
+                              setNewProject(prev => ({ ...prev, image: reader.result as string }));
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {newProject.image && (
+                    <div className="relative mt-2">
+                      <img src={newProject.image} alt="preview" className="h-32 w-full object-cover border-4 border-black" />
+                      <button
+                        onClick={() => setNewProject(prev => ({ ...prev, image: '' }))}
+                        className="absolute top-1 right-1 w-7 h-7 bg-red-500 text-white border-2 border-black font-black text-sm flex items-center justify-center hover:bg-red-600"
+                      >×</button>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="font-black uppercase text-xs mb-1 block">Tags <span className="text-gray-400 font-normal">(comma-separated)</span></label>
+                  <input
+                    type="text"
+                    placeholder="React, Firebase, TailwindCSS"
+                    value={newProject.tags}
+                    onChange={e => setNewProject({ ...newProject, tags: e.target.value })}
+                    className="w-full p-4 border-4 border-black font-bold text-black"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-black uppercase text-xs mb-1 block">🔗 Live Link</label>
+                    <input
+                      type="url"
+                      placeholder="https://yourproject.com"
+                      value={newProject.link}
+                      onChange={e => setNewProject({ ...newProject, link: e.target.value })}
+                      className="w-full p-4 border-4 border-black font-bold text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-black uppercase text-xs mb-1 block">🐛 GitHub Link</label>
+                    <input
+                      type="url"
+                      placeholder="https://github.com/user/repo"
+                      value={newProject.githubLink}
+                      onChange={e => setNewProject({ ...newProject, githubLink: e.target.value })}
+                      className="w-full p-4 border-4 border-black font-bold text-black"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <label className="font-black uppercase text-xs mb-1 block">🎨 Accent Color</label>
+                    <div className="flex gap-2 p-3 border-4 border-black flex-wrap">
+                      {['#FFD600','#00A1FF','#FF4B4B','#10B981','#6B4BFF','#FF6B6B','#8B5CF6','#F59E0B'].map(c => (
+                        <div
+                          key={c}
+                          onClick={() => setNewProject({ ...newProject, color: c })}
+                          className={`w-7 h-7 rounded-full border-2 border-black cursor-pointer hover:scale-125 transition-transform ${newProject.color === c ? 'ring-2 ring-black ring-offset-1 scale-125' : ''}`}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-3 p-4 border-4 border-black font-black uppercase text-xs cursor-pointer bg-white shadow-[4px_4px_0px_#000]">
+                    <input
+                      type="checkbox"
+                      checked={newProject.disabled}
+                      onChange={e => setNewProject({ ...newProject, disabled: e.target.checked })}
+                      className="w-6 h-6 border-2 border-black accent-[#FF4B4B]"
+                    />
+                    Enterprise Only (hides live link)
+                  </label>
+                </div>
+                <button
+                  onClick={handleSaveProject}
+                  className="cartoon-btn w-full bg-[#00A1FF] text-white py-5 font-black uppercase text-2xl shadow-[10px_10px_0px_#000]"
+                >
+                  {editingProjectId !== null ? '💾 UPDATE PROJECT' : '🚀 LAUNCH PROJECT'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar list */}
+          <div className="space-y-4">
+            <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4">Active Projects</h3>
+            <div className="overflow-y-auto max-h-[800px] space-y-3 pr-2 custom-scrollbar">
+              {projects.length === 0 && (
+                <div className="bg-white border-4 border-black p-4 text-center font-bold text-gray-500">
+                  No projects yet. Launch your first one!
+                </div>
+              )}
+              {projects.map(project => (
+                <div
+                  key={project.id}
+                  className={`bg-white border-4 border-black p-4 shadow-[4px_4px_0px_#000] ${
+                    editingProjectId === project.id ? 'ring-4 ring-[#00A1FF]' : ''
+                  }`}
+                >
+                  <div className="flex gap-3 items-start">
+                    {project.image && (
+                      <img src={project.image} alt={project.title} className="w-16 h-12 object-cover border-2 border-black flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-black uppercase text-sm text-black">{project.title}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {project.tags.slice(0, 3).map(t => (
+                          <span key={t} className="bg-black text-white text-[9px] px-1.5 py-0.5 font-black uppercase">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => moveProject(projects.indexOf(project), 'up')}
+                        disabled={projects.indexOf(project) === 0}
+                        className={`w-7 h-7 border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] transition-all ${projects.indexOf(project) === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'}`}
+                        title="Move up"
+                      >↑</button>
+                      <button
+                        onClick={() => moveProject(projects.indexOf(project), 'down')}
+                        disabled={projects.indexOf(project) === projects.length - 1}
+                        className={`w-7 h-7 border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] transition-all ${projects.indexOf(project) === projects.length - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'}`}
+                        title="Move down"
+                      >↓</button>
+                      <button
+                        onClick={() => handleEditProject(project)}
+                        className="px-3 py-1 bg-[#00A1FF] text-white border-2 border-black font-black text-xs uppercase hover:bg-blue-400 shadow-[2px_2px_0px_#000]"
+                      >
+                        EDIT
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="w-8 h-8 bg-red-500 text-white border-2 border-black font-black hover:bg-red-600 shadow-[2px_2px_0px_#000]"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
