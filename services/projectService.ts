@@ -6,6 +6,19 @@ const ORDER_KEY = 'Manish_portfolio_projects_order';
 
 export const saveProjectOrder = (orderedIds: string[]): void => {
     localStorage.setItem(ORDER_KEY, JSON.stringify(orderedIds));
+    // Also persist to DB so the order is consistent on all devices/browsers
+    if (!isMock) {
+        persistOrderToDb(orderedIds).catch(console.error);
+    }
+};
+
+const persistOrderToDb = async (orderedIds: string[]): Promise<void> => {
+    for (let i = 0; i < orderedIds.length; i++) {
+        await db.execute({
+            sql: 'UPDATE projects SET sort_order = ? WHERE id = ?',
+            args: [i + 1, orderedIds[i]],
+        });
+    }
 };
 
 const applyOrder = (projects: Project[]): Project[] => {
@@ -26,10 +39,11 @@ const applyOrder = (projects: Project[]): Project[] => {
 export const getProjects = async (): Promise<Project[]> => {
     if (isMock) return applyOrder(PROJECTS);
     try {
-        const result = await db.execute('SELECT * FROM projects ORDER BY id ASC');
+        const result = await db.execute('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
         if (result.rows.length === 0) return applyOrder(PROJECTS);
 
-        return applyOrder(result.rows.map((row: any) => ({
+        // DB is the source of truth for ordering — don't apply localStorage on top
+        return result.rows.map((row: any) => ({
             id: String(row.id),
             title: row.title || '',
             description: row.description || '',
@@ -39,7 +53,7 @@ export const getProjects = async (): Promise<Project[]> => {
             link: row.live_link || '',
             githubLink: row.github_link || '',
             disabled: row.disabled === 1 || row.disabled === true,
-        })));
+        }));
     } catch (error) {
         console.error('Failed to fetch projects:', error);
         return applyOrder(PROJECTS);

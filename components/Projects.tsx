@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getProjects } from '../services/projectService';
 import { Project } from '../types';
 
@@ -107,6 +108,7 @@ const ProjectCard: React.FC<{ project: Project; index: number }> = ({ project, i
 
 const Projects: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const navigate = useNavigate();
   const [scrollProgress, setScrollProgress] = useState(0);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -204,14 +206,20 @@ const Projects: React.FC = () => {
             opacity: Math.min(pinProgress * 3, 1),
           }}
         >
-          {projects.map((project, index) => (
+          {projects.slice(0, 3).map((project, index) => (
             <ProjectCard key={project.id} project={project} index={index} />
           ))}
 
           <div className="flex-shrink-0 w-[50vw] flex items-center justify-center ml-10">
             <div className="bg-white border-[8px] md:border-[12px] border-black p-8 md:p-16 rotate-3 shadow-[15px_15px_0px_#FFD600] md:shadow-[30px_30px_0px_#FFD600] text-center">
               <h4 className="text-4xl md:text-8xl font-black uppercase tracking-tighter italic mb-2 md:mb-4">FIN_DATA</h4>
-              <p className="font-bold text-sm md:text-2xl uppercase tracking-widest text-[#FF4B4B]">Sequence Complete!</p>
+              <p className="font-bold text-sm md:text-2xl uppercase tracking-widest text-[#FF4B4B] mb-6 md:mb-10">Sequence Complete!</p>
+              <button
+                onClick={() => navigate('/projects')}
+                className="bg-black text-[#FFD600] border-4 border-black px-6 md:px-10 py-3 md:py-4 font-black uppercase text-sm md:text-lg tracking-widest shadow-[6px_6px_0px_#FFD600] hover:bg-[#FFD600] hover:text-black hover:shadow-none transition-all active:translate-y-1"
+              >
+                View All Projects →
+              </button>
             </div>
           </div>
         </div>

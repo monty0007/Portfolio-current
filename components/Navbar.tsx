@@ -72,34 +72,6 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
         <div className="flex items-center gap-3 sm:gap-6 font-black uppercase text-[10px] sm:text-sm">
           <a
-            href="#about"
-            onClick={(e) => handleLinkClick(e, 'about')}
-            className={`hover:text-blue-600 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
-          >
-            About
-          </a>
-          <a
-            href="#projects"
-            onClick={(e) => handleLinkClick(e, 'projects')}
-            className={`hover:text-red-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
-          >
-            Works
-          </a>
-          <a
-            href="#achievements"
-            onClick={(e) => handleLinkClick(e, 'achievements')}
-            className={`hover:text-purple-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
-          >
-            Badges
-          </a>
-          <a
-            href="#arcade"
-            onClick={(e) => handleLinkClick(e, 'arcade')}
-            className={`hidden sm:block hover:text-yellow-500 transition-colors ${currentView === 'home' ? 'text-black' : 'text-gray-400'}`}
-          >
-            Games
-          </a>
-          <a
             href="/projects"
             onClick={(e) => {
               if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
