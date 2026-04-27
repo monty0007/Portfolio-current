@@ -128,10 +128,24 @@ export const updatePost = async (id: number, post: Partial<Omit<BlogPost, 'id' |
     }
 };
 
-// Mock interface for now matching current blog structure, will map DB results to this
+// In-memory caches to avoid redundant DB round-trips
+let postsLiteCache: BlogPost[] | null = null;
+let fullPostCache: Map<string, BlogPost> = new Map();
+
+export const invalidateBlogCache = () => {
+    postsLiteCache = null;
+    fullPostCache.clear();
+};
+
+// Lightweight list fetch — excludes heavy sections/content columns
 export const getPosts = async (): Promise<BlogPost[]> => {
+    if (postsLiteCache) return postsLiteCache;
     try {
-        const result = await db.execute("SELECT * FROM posts");
+        const result = await db.execute(
+            `SELECT id, slug, title, excerpt, author, created_at, read_time, image_url, tags,
+                    category, color, live_link, is_draft, scheduled_date
+             FROM posts`
+        );
 
         // If DB is empty or table doesn't exist, return empty or mock
         // This is a safety check for the first run before migration
@@ -159,13 +173,12 @@ export const getPosts = async (): Promise<BlogPost[]> => {
                 const date = new Date(dateStr);
                 if (!isNaN(date.getTime())) {
                     const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    // Convert month to uppercase: "Jan 14, 2026" -> "JAN 14, 2026"
                     return formatted.replace(/^[A-Za-z]+/, (match) => match.toUpperCase());
                 }
             } catch (e) {
                 // Fall through to return original string
             }
-            return dateStr; // Return as-is if parsing fails (legacy format)
+            return dateStr;
         };
 
         const posts = result.rows.map(row => ({
@@ -173,30 +186,27 @@ export const getPosts = async (): Promise<BlogPost[]> => {
             slug: String(row.slug),
             title: String(row.title),
             excerpt: String(row.excerpt),
-            content: String(row.content),
+            content: '',
             author: String(row.author),
             date: formatDateForDisplay(String(row.created_at)),
-            rawDate: String(row.created_at), // Keep raw date for sorting
+            rawDate: String(row.created_at),
             readTime: String(row.read_time),
             image: String(row.image_url),
             tags: parseTags(row.tags),
             category: String(row.category || ''),
             color: String(row.color || ''),
-            sections: parseTags(row.sections), // Using same parser for JSON array
+            sections: [],
             liveLink: String(row.live_link || ''),
             isDraft: Boolean(row.is_draft),
             scheduledDate: String(row.scheduled_date || '')
         }));
 
-        // Sort by date descending (newest first) using parsed timestamps
-        posts.sort((a, b) => {
-            const timeA = parseDateToTimestamp(a.rawDate);
-            const timeB = parseDateToTimestamp(b.rawDate);
-            return timeB - timeA; // Descending order
-        });
+        // Sort by date descending (newest first)
+        posts.sort((a, b) => parseDateToTimestamp(b.rawDate) - parseDateToTimestamp(a.rawDate));
 
-        // Remove rawDate before returning (it was only for sorting)
-        return posts.map(({ rawDate, ...rest }) => rest);
+        const result2 = posts.map(({ rawDate, ...rest }) => rest);
+        postsLiteCache = result2;
+        return result2;
     } catch (error) {
         console.error("Failed to fetch posts:", error);
         return [];
@@ -204,6 +214,8 @@ export const getPosts = async (): Promise<BlogPost[]> => {
 };
 
 export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
+    if (fullPostCache.has(slug)) return fullPostCache.get(slug)!;
+
     // Helper to format date for display  
     const formatDateForDisplay = (dateStr: string): string => {
         try {
@@ -246,6 +258,8 @@ export const getPostBySlug = async (slug: string): Promise<BlogPost | null> => {
             isDraft: Boolean(row.is_draft),
             scheduledDate: String(row.scheduled_date || '')
         };
+        fullPostCache.set(slug, post);
+        return post;
     } catch (error) {
         console.error(`Failed to fetch post ${slug}:`, error);
         return null;

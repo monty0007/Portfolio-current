@@ -2,17 +2,9 @@ import { db, isMock } from './db';
 import { Project } from '../types';
 import { PROJECTS } from '../constants';
 
-const ORDER_KEY = 'Manish_portfolio_projects_order';
-
-export const saveProjectOrder = (orderedIds: string[]): void => {
-    localStorage.setItem(ORDER_KEY, JSON.stringify(orderedIds));
-    // Also persist to DB so the order is consistent on all devices/browsers
-    if (!isMock) {
-        persistOrderToDb(orderedIds).catch(console.error);
-    }
-};
-
-const persistOrderToDb = async (orderedIds: string[]): Promise<void> => {
+// Persist a new ordering to the DB — DB is the single source of truth, no localStorage.
+export const saveProjectOrder = async (orderedIds: string[]): Promise<void> => {
+    if (isMock) return;
     for (let i = 0; i < orderedIds.length; i++) {
         await db.execute({
             sql: 'UPDATE projects SET sort_order = ? WHERE id = ?',
@@ -21,28 +13,12 @@ const persistOrderToDb = async (orderedIds: string[]): Promise<void> => {
     }
 };
 
-const applyOrder = (projects: Project[]): Project[] => {
-    const raw = localStorage.getItem(ORDER_KEY);
-    if (!raw) return projects;
-    try {
-        const order: string[] = JSON.parse(raw);
-        const map = new Map(projects.map(p => [p.id, p]));
-        const sorted: Project[] = [];
-        order.forEach(id => { if (map.has(id)) sorted.push(map.get(id)!); });
-        projects.forEach(p => { if (!order.includes(p.id)) sorted.push(p); });
-        return sorted;
-    } catch {
-        return projects;
-    }
-};
-
 export const getProjects = async (): Promise<Project[]> => {
-    if (isMock) return applyOrder(PROJECTS);
+    if (isMock) return PROJECTS;
     try {
         const result = await db.execute('SELECT * FROM projects ORDER BY sort_order ASC, id ASC');
-        if (result.rows.length === 0) return applyOrder(PROJECTS);
+        if (result.rows.length === 0) return PROJECTS;
 
-        // DB is the source of truth for ordering — don't apply localStorage on top
         return result.rows.map((row: any) => ({
             id: String(row.id),
             title: row.title || '',
@@ -56,7 +32,7 @@ export const getProjects = async (): Promise<Project[]> => {
         }));
     } catch (error) {
         console.error('Failed to fetch projects:', error);
-        return applyOrder(PROJECTS);
+        return PROJECTS;
     }
 };
 
@@ -68,9 +44,11 @@ export const createProject = async (
     }
     try {
         const tagsStr = JSON.stringify(project.tags || []);
+        // Shift all existing projects down by 1 so the new one can take rank 1
+        await db.execute('UPDATE projects SET sort_order = sort_order + 1');
         await db.execute({
-            sql: `INSERT INTO projects (title, description, image_url, tags, color, live_link, github_link, disabled)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO projects (title, description, image_url, tags, color, live_link, github_link, disabled, sort_order)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
             args: [
                 project.title,
                 project.description,

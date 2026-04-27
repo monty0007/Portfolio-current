@@ -127,26 +127,19 @@ const Blog: React.FC = () => {
     fetchBlogs();
   }, []);
 
-  // Sync slug with selectedPost
+  // Sync slug with selectedPost — always fetch full post (sections not loaded in list)
   useEffect(() => {
     const loadPost = async () => {
       if (slug) {
-        // Check if we already have it in list to avoid extra request
-        const existing = blogs.find(b => b.slug === slug);
-        if (existing) {
-          setSelectedPost(existing);
-        } else {
-          // Fallback to fetch individual if not in list (deep link)
-          const post = await getPostBySlug(slug);
-          setSelectedPost(post);
-        }
+        const post = await getPostBySlug(slug);
+        setSelectedPost(post);
         window.scrollTo(0, 0);
       } else {
         setSelectedPost(null);
       }
     };
     if (!loading) loadPost();
-  }, [slug, blogs, loading]);
+  }, [slug, loading]);
 
   const todayStr = new Date().toISOString().split('T')[0];
 

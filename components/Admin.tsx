@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getPosts, createPost, deletePost, updatePost, BlogPost } from '../services/blogService';
+import { getPosts, createPost, deletePost, updatePost, invalidateBlogCache, BlogPost } from '../services/blogService';
 import { getAchievements, addAchievement, deleteAchievement } from '../services/dataService';
 import { getProjects, createProject, updateProject, deleteProject, saveProjectOrder } from '../services/projectService';
 import { Achievement, Project } from '../types';
@@ -41,6 +41,36 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [imageMap, setImageMap] = useState<{ [key: string]: string }>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastCursorPositionRef = useRef<{ start: number; end: number } | null>(null);
+  const projectFormRef = useRef<HTMLDivElement>(null);
+
+  // Resize an image file to fit within maxWidth x maxHeight, returns a base64 data URL
+  const resizeImage = (file: File, maxWidth: number, maxHeight: number, quality = 0.82): Promise<{ dataUrl: string; resized: boolean }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onloadend = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Failed to decode image'));
+        img.onload = () => {
+          let { width, height } = img;
+          const needsResize = width > maxWidth || height > maxHeight;
+          if (needsResize) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve({ dataUrl: canvas.toDataURL('image/jpeg', quality), resized: needsResize });
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   // Markdown-style templates
   // JSON Templates
@@ -95,6 +125,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const refreshData = async () => {
+    invalidateBlogCache();
     const posts = await getPosts();
     setBlogs(posts);
   };
@@ -355,6 +386,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const success = await deletePost(deleteTargetId);
     if (success) {
+      invalidateBlogCache();
       await refreshData();
       showFeedback("ENTRY DELETED! 🗑️");
     } else {
@@ -479,6 +511,10 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       disabled: project.disabled,
     });
     showFeedback('Project loaded for editing! ✏️');
+    // Scroll the form into view so the user sees the populated fields
+    setTimeout(() => {
+      projectFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   const handleDeleteProject = (id: string) => {
@@ -499,7 +535,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setDeleteProjectTargetId(null);
   };
 
-  const moveProject = (index: number, direction: 'up' | 'down') => {
+  const moveProject = async (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= projects.length) return;
     const updated = [...projects];
@@ -507,8 +543,14 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     updated[index] = updated[newIndex];
     updated[newIndex] = temp;
     setProjects(updated);
-    saveProjectOrder(updated.map(p => p.id));
-    showFeedback(direction === 'up' ? 'Project moved up! ⬆️' : 'Project moved down! ⬇️');
+    try {
+      await saveProjectOrder(updated.map(p => p.id));
+      showFeedback(direction === 'up' ? 'Project moved up! ⬆️' : 'Project moved down! ⬇️');
+    } catch {
+      // Revert optimistic update on failure
+      setProjects(projects);
+      showFeedback('Failed to save order! 🛑', 'error');
+    }
   };
 
   const DeleteConfirmationModal = () => createPortal(
@@ -760,26 +802,100 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F0F0F0] pt-32 pb-20 px-6">
+    <div className="min-h-screen bg-[#F0F0F0]">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       {showDeleteModal && <DeleteConfirmationModal />}
       {showWipeModal && <WipeConfirmationModal />}
       {showDeleteAchModal && <DeleteAchConfirmationModal />}
       {showDeleteProjectModal && <DeleteProjectModal />}
 
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-red-500 border-4 border-black rounded-full flex items-center justify-center text-3xl shadow-[4px_4px_0px_#000]">🧪</div>
-            <h1 className="text-5xl font-black uppercase tracking-tighter text-black">Admin <span className="text-red-500">Suite</span></h1>
+      {/* ── Dark Admin Header ── */}
+      <div className="bg-black border-b-4 border-[#FFD600] pt-32 pb-6 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-[#FFD600] border-4 border-black flex items-center justify-center shadow-[5px_5px_0px_rgba(255,214,0,0.2)]">
+              <svg viewBox="0 0 24 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-9 h-9">
+                <path d="M2 17L5 6L10 11L12 4L14 11L19 6L22 17H2Z" fill="#000"/>
+                <path d="M2 17H22V19H2V17Z" fill="#000"/>
+                <circle cx="5" cy="6" r="1.5" fill="#000"/>
+                <circle cx="12" cy="4" r="1.5" fill="#000"/>
+                <circle cx="19" cy="6" r="1.5" fill="#000"/>
+              </svg>
+            </div>
+            <div>
+              <p className="text-[#FFD600]/70 font-black text-[10px] uppercase tracking-[0.3em] mb-0.5">Control Center</p>
+              <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-tighter text-white leading-none">
+                Admin <span className="text-[#FFD600]">Suite</span>
+              </h1>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button onClick={() => setTab('blogs')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'blogs' ? 'bg-[#FF4B4B] text-white' : 'bg-white text-black'}`}>Blogs</button>
-            <button onClick={() => setTab('achievements')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'achievements' ? 'bg-[#FFD600] text-black' : 'bg-white text-black'}`}>Badges</button>
-            <button onClick={() => setTab('projects')} className={`cartoon-btn px-6 py-2 font-black uppercase ${tab === 'projects' ? 'bg-[#00A1FF] text-white' : 'bg-white text-black'}`}>Projects</button>
-            <button onClick={onBack} className="cartoon-btn bg-black text-white px-6 py-2 font-black uppercase">Exit</button>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 bg-[#FFD600] text-black border-4 border-black px-6 py-3 font-black uppercase text-sm hover:bg-yellow-300 transition-all shadow-[4px_4px_0px_rgba(255,214,0,0.4)] active:translate-y-1"
+          >
+            ← Exit Admin
+          </button>
+        </div>
+      </div>
+
+      {/* ── Stats + Tabs ── */}
+      <div className="bg-white border-b-4 border-black px-6 py-4">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-[#FF4B4B] border-4 border-black p-3 sm:p-4 shadow-[4px_4px_0px_#000] flex items-center gap-2 sm:gap-3">
+              <span className="text-xl sm:text-2xl">📝</span>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-white leading-none">{blogs.length}</div>
+                <div className="text-[9px] sm:text-[10px] font-black uppercase text-white/80">Blog Posts</div>
+              </div>
+            </div>
+            <div className="bg-[#FFD600] border-4 border-black p-3 sm:p-4 shadow-[4px_4px_0px_#000] flex items-center gap-2 sm:gap-3">
+              <span className="text-xl sm:text-2xl">🏆</span>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-black leading-none">{achievements.length}</div>
+                <div className="text-[9px] sm:text-[10px] font-black uppercase text-black/60">Achievements</div>
+              </div>
+            </div>
+            <div className="bg-[#00A1FF] border-4 border-black p-3 sm:p-4 shadow-[4px_4px_0px_#000] flex items-center gap-2 sm:gap-3">
+              <span className="text-xl sm:text-2xl">🚀</span>
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-white leading-none">{projects.length}</div>
+                <div className="text-[9px] sm:text-[10px] font-black uppercase text-white/80">Projects</div>
+              </div>
+            </div>
+          </div>
+          <div className="flex border-4 border-black overflow-hidden shadow-[4px_4px_0px_#000]">
+            <button
+              onClick={() => setTab('blogs')}
+              className={`flex-1 px-4 py-3 font-black uppercase text-sm flex items-center justify-center gap-2 transition-all ${tab === 'blogs' ? 'bg-[#FF4B4B] text-white' : 'bg-white text-black hover:bg-[#fff8f8]'}`}
+            >
+              <span>📝</span>
+              <span className="hidden sm:inline">Blogs</span>
+              <span className={`px-1.5 py-0.5 text-[10px] font-black border-2 border-black rounded-full leading-none ${tab === 'blogs' ? 'bg-white text-[#FF4B4B]' : 'bg-black text-white'}`}>{blogs.length}</span>
+            </button>
+            <div className="w-1 bg-black flex-shrink-0" />
+            <button
+              onClick={() => setTab('achievements')}
+              className={`flex-1 px-4 py-3 font-black uppercase text-sm flex items-center justify-center gap-2 transition-all ${tab === 'achievements' ? 'bg-[#FFD600] text-black' : 'bg-white text-black hover:bg-[#fffdf0]'}`}
+            >
+              <span>🏆</span>
+              <span className="hidden sm:inline">Badges</span>
+              <span className={`px-1.5 py-0.5 text-[10px] font-black border-2 border-black rounded-full leading-none ${tab === 'achievements' ? 'bg-black text-[#FFD600]' : 'bg-black text-white'}`}>{achievements.length}</span>
+            </button>
+            <div className="w-1 bg-black flex-shrink-0" />
+            <button
+              onClick={() => setTab('projects')}
+              className={`flex-1 px-4 py-3 font-black uppercase text-sm flex items-center justify-center gap-2 transition-all ${tab === 'projects' ? 'bg-[#00A1FF] text-white' : 'bg-white text-black hover:bg-[#f0f9ff]'}`}
+            >
+              <span>🚀</span>
+              <span className="hidden sm:inline">Projects</span>
+              <span className={`px-1.5 py-0.5 text-[10px] font-black border-2 border-black rounded-full leading-none ${tab === 'projects' ? 'bg-white text-[#00A1FF]' : 'bg-black text-white'}`}>{projects.length}</span>
+            </button>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 pt-8 pb-20">
 
         {tab === 'blogs' && <SlideOutManual />}
 
@@ -901,38 +1017,26 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             multiple
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const files = Array.from(e.target.files || []) as File[];
                               if (files.length === 0) return;
                               if (files.length > 2) {
                                 showFeedback("MAX 2 IMAGES FOR GRID! 🛑", "error");
                                 return;
                               }
-                              if (files.some((f) => f.size > 800 * 1024)) {
-                                showFeedback("FILE TOO BIG! Max 800KB each! 🛑", "error");
-                                return;
-                              }
 
-                              const promises = files.map(file => {
-                                return new Promise<string>((resolve) => {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    if (typeof reader.result === 'string') {
-                                      resolve(reader.result);
-                                    } else {
-                                      resolve('');
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
-                                });
-                              });
+                              try {
+                                const results = await Promise.all(
+                                  files.map(f => resizeImage(f, 900, 700, 0.82))
+                                );
+                                const anyResized = results.some(r => r.resized);
 
-                              Promise.all(promises).then(results => {
-                                const imgId1 = `IMG_${Date.now()}_1`;
-                                const imgId2 = results.length > 1 ? `IMG_${Date.now()}_2` : '';
+                                const ts = Date.now();
+                                const imgId1 = `IMG_${ts}_1`;
+                                const imgId2 = results.length > 1 ? `IMG_${ts}_2` : '';
 
-                                const newMap: { [key: string]: string } = { [imgId1]: results[0] };
-                                if (imgId2) newMap[imgId2] = results[1];
+                                const newMap: { [key: string]: string } = { [imgId1]: results[0].dataUrl };
+                                if (imgId2) newMap[imgId2] = results[1].dataUrl;
 
                                 setImageMap(prev => ({ ...prev, ...newMap }));
 
@@ -941,7 +1045,14 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 } else {
                                   smartInsert(`{\n  "type": "image-grid",\n  "content": "{{${imgId1}}}",\n  "content2": "{{${imgId2}}}",\n  "caption": "Uploaded Grid"\n}`, true);
                                 }
-                              });
+                                if (anyResized) {
+                                  showFeedback('Images uploaded & resized to fit! 🖼️✅');
+                                } else {
+                                  showFeedback('Images uploaded! 🖼️✅');
+                                }
+                              } catch {
+                                showFeedback('Failed to process images! 🛑', 'error');
+                              }
                               e.target.value = '';
                             }}
                           />
@@ -1106,9 +1217,10 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {/* ======== PROJECTS TAB ======== */}
       {tab === 'projects' && (
+        <div className="max-w-6xl mx-auto px-6 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 text-black">
           {/* Form */}
-          <div className="lg:col-span-2 space-y-8">
+          <div ref={projectFormRef} className="lg:col-span-2 space-y-8">
             <div className="bg-white border-4 border-black p-8 shadow-[10px_10px_0px_#000]">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black uppercase">
@@ -1159,20 +1271,20 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 1024 * 1024) {
-                            showFeedback('Image too large! Max 1MB 🛑', 'error');
-                            return;
-                          }
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            if (typeof reader.result === 'string') {
-                              setNewProject(prev => ({ ...prev, image: reader.result as string }));
+                          try {
+                            const { dataUrl, resized } = await resizeImage(file, 800, 600, 0.82);
+                            setNewProject(prev => ({ ...prev, image: dataUrl }));
+                            if (resized) {
+                              showFeedback('Image uploaded & resized to fit! 🖼️✅');
+                            } else {
+                              showFeedback('Image uploaded! 🖼️✅');
                             }
-                          };
-                          reader.readAsDataURL(file);
+                          } catch {
+                            showFeedback('Failed to process image! 🛑', 'error');
+                          }
                           e.target.value = '';
                         }}
                       />
@@ -1313,6 +1425,7 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               ))}
             </div>
           </div>
+        </div>
         </div>
       )}
 
