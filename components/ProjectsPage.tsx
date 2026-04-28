@@ -274,6 +274,13 @@ const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<{ project: Project; index: number } | null>(null);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('portfolio_hero_dark') !== 'false');
+
+  useEffect(() => {
+    const handler = () => setIsDark(localStorage.getItem('portfolio_hero_dark') !== 'false');
+    window.addEventListener('portfolioThemeChange', handler);
+    return () => window.removeEventListener('portfolioThemeChange', handler);
+  }, []);
 
   useEffect(() => {
     getProjects().then(data => {
@@ -294,12 +301,12 @@ const ProjectsPage: React.FC = () => {
       />
 
       {/* Admin-style dark header */}
-      <div className="bg-black border-b-4 border-[#FFD600] pt-36 pb-12 px-6 relative overflow-hidden">
-        <div className="absolute -right-10 -top-8 text-[20vw] font-black text-white/[0.03] select-none pointer-events-none uppercase leading-none italic">WORKS</div>
+      <div className={`${isDark ? 'bg-black border-b-4 border-[#FFD600]' : 'bg-[#FFF9E6] border-b-4 border-black'} pt-36 pb-12 px-6 relative overflow-hidden`}>
+        <div className={`absolute -right-10 -top-8 text-[20vw] font-black ${isDark ? 'text-white/[0.03]' : 'text-black/[0.03]'} select-none pointer-events-none uppercase leading-none italic`}>WORKS</div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
           <div>
-            <p className="text-[#FFD600]/70 font-black text-[10px] uppercase tracking-[0.3em] mb-2">Portfolio</p>
-            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none text-white">
+            <p className={`${isDark ? 'text-[#FFD600]/70' : 'text-black/50'} font-black text-[10px] uppercase tracking-[0.3em] mb-2`}>Portfolio</p>
+            <h1 className={`text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-black'}`}>
               My{' '}
               <span
                 className="relative inline-block"
@@ -315,7 +322,7 @@ const ProjectsPage: React.FC = () => {
             {!loading && (
               <div className="flex items-center gap-3 mt-3">
                 <div className="h-[4px] w-16 bg-[#FFD600] border border-black" />
-                <p className="font-bold text-white/50 text-sm">
+                <p className={`font-bold ${isDark ? 'text-white/50' : 'text-black/50'} text-sm`}>
                   {projects.length} project{projects.length !== 1 ? 's' : ''} built
                 </p>
               </div>

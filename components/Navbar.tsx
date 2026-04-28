@@ -10,8 +10,15 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('portfolio_hero_dark') !== 'false');
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handler = () => setIsDark(localStorage.getItem('portfolio_hero_dark') !== 'false');
+    window.addEventListener('portfolioThemeChange', handler);
+    return () => window.removeEventListener('portfolioThemeChange', handler);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
   return (
     <nav className={`fixed top-4 sm:top-6 left-1/2 z-[110] w-[95%] sm:w-[90%] max-w-5xl transition-all duration-500 ease-in-out ${isVisible ? 'nav-visible' : 'nav-hidden'}`}>
-      <div className="bg-white/10 backdrop-blur-md border-[3px] sm:border-[4px] border-white/30 shadow-[4px_4px_0px_rgba(0,0,0,0.3)] sm:shadow-[8px_8px_0px_rgba(0,0,0,0.3)] px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between">
+      <div className={`backdrop-blur-md border-[3px] sm:border-[4px] shadow-[4px_4px_0px_rgba(0,0,0,0.3)] sm:shadow-[8px_8px_0px_rgba(0,0,0,0.3)] px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between ${isDark ? 'bg-white/10 border-white/30' : 'bg-black/80 border-black/60'}`}>
         <div
           className="text-2xl font-black tracking-tighter flex items-center gap-2 sm:gap-3 cursor-pointer group"
           onClick={() => {

@@ -103,11 +103,18 @@ const SectionRenderer: React.FC<{ section: BlogSection }> = ({ section }) => {
 const Blog: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { slug } = useParams<{ slug: string }>(); // Get slug from URL
+  const { slug } = useParams<{ slug: string }>();
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('portfolio_hero_dark') !== 'false');
+
+  useEffect(() => {
+    const handler = () => setIsDark(localStorage.getItem('portfolio_hero_dark') !== 'false');
+    window.addEventListener('portfolioThemeChange', handler);
+    return () => window.removeEventListener('portfolioThemeChange', handler);
+  }, []);
 
   // Reset view when receiving reset signal from Navbar
   useEffect(() => {
@@ -167,12 +174,12 @@ const Blog: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#F0F0F0] animate-in slide-in-from-bottom duration-500">
         {/* Dark header band */}
-        <div className="bg-black border-b-4 border-[#FFD600] pt-36 pb-12 px-4 sm:px-6 relative overflow-hidden">
-          <div className="absolute -right-10 -top-8 text-[20vw] font-black text-white/[0.03] select-none pointer-events-none uppercase leading-none">POST</div>
+        <div className={`${isDark ? 'bg-black border-b-4 border-[#FFD600]' : 'bg-[#FFF9E6] border-b-4 border-black'} pt-36 pb-12 px-4 sm:px-6 relative overflow-hidden`}>
+          <div className={`absolute -right-10 -top-8 text-[20vw] font-black ${isDark ? 'text-white/[0.03]' : 'text-black/[0.03]'} select-none pointer-events-none uppercase leading-none`}>POST</div>
           <div className="max-w-4xl mx-auto relative z-10">
             <button
               onClick={() => navigate('/blog')}
-              className="flex items-center gap-2 text-white/50 hover:text-[#FFD600] font-black uppercase text-xs tracking-widest mb-6 transition-colors group"
+              className={`flex items-center gap-2 ${isDark ? 'text-white/50 hover:text-[#FFD600]' : 'text-black/50 hover:text-[#FF4B4B]'} font-black uppercase text-xs tracking-widest mb-6 transition-colors group`}
             >
               <span className="group-hover:-translate-x-1 transition-transform">←</span> All Posts
             </button>
@@ -274,16 +281,16 @@ const Blog: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F0F0F0]">
       {/* Dark Admin-style banner header */}
-      <div className="bg-black border-b-4 border-[#FF4B4B] pt-36 pb-12 px-6 relative overflow-hidden">
-        <div className="absolute -right-10 -top-8 text-[20vw] font-black text-white/[0.03] select-none pointer-events-none uppercase leading-none">LOGS</div>
+      <div className={`${isDark ? 'bg-black border-b-4 border-[#FF4B4B]' : 'bg-[#FFF9E6] border-b-4 border-black'} pt-36 pb-12 px-6 relative overflow-hidden`}>
+        <div className={`absolute -right-10 -top-8 text-[20vw] font-black ${isDark ? 'text-white/[0.03]' : 'text-black/[0.03]'} select-none pointer-events-none uppercase leading-none`}>LOGS</div>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6 relative z-10">
           <div>
-            <p className="text-[#FF4B4B]/60 font-black text-[10px] uppercase tracking-[0.3em] mb-1">Writing &amp; Devlogs</p>
-            <h1 className="text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none text-white">
+            <p className={`${isDark ? 'text-[#FF4B4B]/60' : 'text-[#FF4B4B]'} font-black text-[10px] uppercase tracking-[0.3em] mb-1`}>Writing &amp; Devlogs</p>
+            <h1 className={`text-5xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-black'}`}>
               GOSSIP <span className="text-[#FF4B4B]">LOGS</span>
             </h1>
             {!loading && (
-              <p className="mt-3 text-white/40 font-black uppercase text-xs tracking-widest">
+              <p className={`mt-3 ${isDark ? 'text-white/40' : 'text-black/40'} font-black uppercase text-xs tracking-widest`}>
                 {filteredBlogs.length} post{filteredBlogs.length !== 1 ? 's' : ''} {searchTerm ? 'found' : 'published'}
               </p>
             )}

@@ -466,6 +466,20 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     localStorage.setItem('Manish_portfolio_achievements_v2', JSON.stringify(updated));
     showFeedback(direction === 'up' ? "Badge moved up! ⬆️" : "Badge moved down! ⬇️");
   };
+
+  const dragBadgeIndexRef = useRef<number | null>(null);
+
+  const handleBadgeDrop = (dropIndex: number) => {
+    const dragIndex = dragBadgeIndexRef.current;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+    const updated = [...achievements];
+    const [dragged] = updated.splice(dragIndex, 1);
+    updated.splice(dropIndex, 0, dragged);
+    dragBadgeIndexRef.current = null;
+    setAchievements(updated);
+    localStorage.setItem('Manish_portfolio_achievements_v2', JSON.stringify(updated));
+    showFeedback('Badge order saved! ✅');
+  };
   // --- PROJECT HANDLERS ---
   const handleSaveProject = async () => {
     if (!newProject.title.trim()) {
@@ -851,12 +865,25 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </h1>
             </div>
           </div>
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 bg-[#FFD600] text-black border-4 border-black px-6 py-3 font-black uppercase text-sm hover:bg-yellow-300 transition-all shadow-[4px_4px_0px_rgba(255,214,0,0.4)] active:translate-y-1"
-          >
-            ← Exit Admin
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const current = localStorage.getItem('portfolio_hero_dark') !== 'false';
+                localStorage.setItem('portfolio_hero_dark', current ? 'false' : 'true');
+                window.dispatchEvent(new Event('portfolioThemeChange'));
+                showFeedback(current ? '☀️ Switched to Light Theme!' : '🌑 Switched to Dark Theme!');
+              }}
+              className="flex items-center gap-2 bg-white text-black border-4 border-black px-5 py-3 font-black uppercase text-sm hover:bg-gray-100 transition-all shadow-[4px_4px_0px_#000] active:translate-y-1"
+            >
+              🎨 Toggle Theme
+            </button>
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 bg-[#FFD600] text-black border-4 border-black px-6 py-3 font-black uppercase text-sm hover:bg-yellow-300 transition-all shadow-[4px_4px_0px_rgba(255,214,0,0.4)] active:translate-y-1"
+            >
+              ← Exit Admin
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1182,51 +1209,47 @@ const Admin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             </div>
             <div className="space-y-4">
-              <h3 className="font-black uppercase text-sm border-b-4 border-black pb-2 mb-4">Earned Badges</h3>
-              <div className="overflow-y-auto max-h-[800px] space-y-3">
+              <div className="flex items-center justify-between border-b-4 border-black pb-2 mb-4">
+                <h3 className="font-black uppercase text-sm">Badge Order</h3>
+                <span className="text-[10px] font-black uppercase text-gray-400 bg-gray-100 border-2 border-black px-2 py-0.5">Drag to reorder</span>
+              </div>
+              {achievements.length === 0 && (
+                <div className="bg-white border-4 border-black p-4 text-center font-bold text-gray-500">No badges yet. Forge your first one!</div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
                 {achievements.map((ach, index) => (
-                  <div key={ach.id} className={`bg-white border-4 border-black p-4 shadow-[4px_4px_0px_#000] ${editingAchId === ach.id ? 'ring-4 ring-yellow-400' : ''}`}>
-                    <div className="flex justify-between items-center gap-2">
-                      <div className="flex items-center gap-3 font-black uppercase text-sm min-w-0 flex-1">
-                        <span className="text-xl flex-shrink-0">{ach.icon}</span>
-                        <div className="min-w-0">
-                          <div className="truncate">{ach.title}</div>
-                          <div className="text-xs text-gray-500 mt-1">{ach.issuer} • {ach.date}</div>
-                        </div>
+                  <div
+                    key={ach.id}
+                    draggable
+                    onDragStart={() => { dragBadgeIndexRef.current = index; }}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => handleBadgeDrop(index)}
+                    className={`relative group cursor-grab active:cursor-grabbing border-4 border-black shadow-[4px_4px_0px_#000] hover:shadow-[6px_6px_0px_#000] hover:-translate-y-1 transition-all bg-white overflow-hidden ${editingAchId === ach.id ? 'ring-4 ring-yellow-400' : ''}`}
+                  >
+                    {/* Color band + icon */}
+                    <div className="relative w-full h-14 flex items-center justify-center" style={{ backgroundColor: ach.color }}>
+                      <span className="text-3xl">{ach.icon}</span>
+                      {/* Order number */}
+                      <div className="absolute top-1 left-1 w-5 h-5 bg-black text-white font-black text-[9px] flex items-center justify-center border border-white">
+                        {index + 1}
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {/* Reorder buttons */}
-                        <button
-                          onClick={() => moveBadge(index, 'up')}
-                          disabled={index === 0}
-                          className={`w-7 h-7 border-2 border-black font-black text-xs ${index === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'} shadow-[2px_2px_0px_#000] transition-all`}
-                          title="Move up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => moveBadge(index, 'down')}
-                          disabled={index === achievements.length - 1}
-                          className={`w-7 h-7 border-2 border-black font-black text-xs ${index === achievements.length - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-black hover:bg-gray-300'} shadow-[2px_2px_0px_#000] transition-all`}
-                          title="Move down"
-                        >
-                          ↓
-                        </button>
+                      {/* Drag hint */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="bg-white/90 border-2 border-black px-1.5 py-0.5 font-black text-[9px] uppercase">⠿ Drag</div>
+                      </div>
+                    </div>
+                    {/* Title + actions */}
+                    <div className="p-2">
+                      <div className="text-[10px] font-black uppercase truncate mb-1">{ach.title}</div>
+                      <div className="flex gap-1">
                         <button
                           onClick={() => handleEditAch(ach)}
-                          className="px-3 py-1 bg-[#00A1FF] text-white border-2 border-black font-black text-xs uppercase hover:bg-blue-400 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
-                          title="Edit badge"
-                        >
-                          EDIT
-                        </button>
+                          className="flex-1 px-1 py-0.5 bg-[#00A1FF] text-white border-2 border-black font-black text-[9px] uppercase hover:bg-blue-400"
+                        >EDIT</button>
                         <button
-                          aria-label="Delete badge"
                           onClick={() => handleDeleteAch(ach.id)}
-                          className="w-8 h-8 bg-red-500 text-white border-2 border-black font-black hover:bg-red-600 shadow-[2px_2px_0px_#000] transition-all hover:shadow-[1px_1px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px]"
-                          title="Delete badge"
-                        >
-                          ×
-                        </button>
+                          className="w-5 h-5 bg-red-500 text-white border-2 border-black font-black text-xs hover:bg-red-600 flex items-center justify-center"
+                        >×</button>
                       </div>
                     </div>
                   </div>
