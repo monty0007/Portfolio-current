@@ -35,8 +35,9 @@ export default defineConfig(({ mode }) => {
               if (id.includes('@google/genai')) return 'vendor-genai';
               if (id.includes('@emailjs')) return 'vendor-email';
               if (id.includes('@libsql')) return 'vendor-db';
-              if (id.includes('react-router')) return 'vendor-router';
-              if (id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) return 'vendor-react';
+              // Keep react, react-dom, react-router, and scheduler together to avoid
+              // chunk initialization order issues with React 19 Activity API.
+              if (id.includes('react-router') || id.includes('react-dom') || id.includes('react/') || id.includes('scheduler')) return 'vendor-react';
               return 'vendor';
             },
           },
